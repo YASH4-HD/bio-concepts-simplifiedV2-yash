@@ -136,7 +136,7 @@ st.markdown("""
 tabs = st.tabs([
     "📖 Reader", 
     "🧠 10 Points", 
-    "🧬 DNA Lab", 
+    "🧪 DNA Interactive Lab", 
     "🔍 Search", 
     "🌐 Global Bio-Search", 
     "🇮🇳 Hindi Helper", 
