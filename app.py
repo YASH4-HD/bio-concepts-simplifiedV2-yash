@@ -157,32 +157,43 @@ with tabs[3]:
         if not found: st.warning("No matches found.")
 
 # =========================
-# TAB 5: GLOBAL BIO-SEARCH (With Wikipedia)
+# TAB 5: GLOBAL BIO-SEARCH (FIXED WIKI)
 # =========================
-import wikipedia  # Add this at the very top of your file
+import wikipedia 
 
 with tabs[4]:
     st.header("🌐 Global Bio-Intelligence")
-    st.caption("Search Wikipedia and NCBI (National Center for Biotechnology Information)")
+    st.caption("Search Wikipedia and NCBI")
     
-    # 1. Wikipedia Section
     st.subheader("📚 Quick Wikipedia Summary")
-    wiki_query = st.text_input("Enter a topic to explain (e.g., DNA, CRISPR, Mitosis):")
+    wiki_query = st.text_input("Enter a topic (e.g., CRISPR, DNA, Mitosis):")
     
     if wiki_query:
-        with st.spinner("Fetching Wikipedia summary..."):
+        with st.spinner("Searching Wikipedia..."):
             try:
-                # Get the summary (first 3 sentences)
+                # Strategy 1: Try exact search
                 summary = wikipedia.summary(wiki_query, sentences=3)
                 st.info(summary)
-                
-                # Link to full article
-                page = wikipedia.page(wiki_query)
-                st.markdown(f"🔗 [Read full Wikipedia article]({page.url})")
+                st.markdown(f"🔗 [Read full Wikipedia article]({wikipedia.page(wiki_query).url})")
+            
             except wikipedia.exceptions.DisambiguationError as e:
-                st.warning(f"Too vague! Try one of these: {', '.join(e.options[:5])}")
+                # Strategy 2: If vague (like CRISPR/Crisps), look for a biology-related suggestion
+                refined_query = ""
+                for option in e.options:
+                    if any(word in option.lower() for word in ["gene", "biology", "protein", "cas9", "science"]):
+                        refined_query = option
+                        break
+                
+                if refined_query:
+                    summary = wikipedia.summary(refined_query, sentences=3)
+                    st.success(f"Showing results for: **{refined_query}**")
+                    st.info(summary)
+                    st.markdown(f"🔗 [Read full article]({wikipedia.page(refined_query).url})")
+                else:
+                    st.warning(f"Multiple meanings found. Did you mean: {', '.join(e.options[:3])}?")
+            
             except Exception:
-                st.error("Could not find a Wikipedia page for this term.")
+                st.error("Topic not found. Please try a more specific term.")
 
     st.divider()
 
