@@ -4,6 +4,7 @@ import os
 import easyocr
 from deep_translator import GoogleTranslator
 import requests
+import wikipedia
 
 # =========================
 # PAGE CONFIG
@@ -156,28 +157,54 @@ with tabs[3]:
         if not found: st.warning("No matches found.")
 
 # =========================
-# TAB 5: GLOBAL BIO-SEARCH
+# TAB 5: GLOBAL BIO-SEARCH (With Wikipedia)
 # =========================
+import wikipedia  # Add this at the very top of your file
+
 with tabs[4]:
     st.header("🌐 Global Bio-Intelligence")
-    st.caption("Live connection to NCBI (National Center for Biotechnology Information)")
-    s_type = st.selectbox("Database", ["pubmed", "gene", "disease"])
-    s_query = st.text_input(f"Enter {s_type} keyword:")
+    st.caption("Search Wikipedia and NCBI (National Center for Biotechnology Information)")
+    
+    # 1. Wikipedia Section
+    st.subheader("📚 Quick Wikipedia Summary")
+    wiki_query = st.text_input("Enter a topic to explain (e.g., DNA, CRISPR, Mitosis):")
+    
+    if wiki_query:
+        with st.spinner("Fetching Wikipedia summary..."):
+            try:
+                # Get the summary (first 3 sentences)
+                summary = wikipedia.summary(wiki_query, sentences=3)
+                st.info(summary)
+                
+                # Link to full article
+                page = wikipedia.page(wiki_query)
+                st.markdown(f"🔗 [Read full Wikipedia article]({page.url})")
+            except wikipedia.exceptions.DisambiguationError as e:
+                st.warning(f"Too vague! Try one of these: {', '.join(e.options[:5])}")
+            except Exception:
+                st.error("Could not find a Wikipedia page for this term.")
+
+    st.divider()
+
+    # 2. NCBI Section
+    st.subheader("🔬 Technical Research (NCBI)")
+    s_type = st.selectbox("Database", ["pubmed", "gene", "protein"])
+    s_query = st.text_input(f"Enter {s_type} keyword for technical data:")
     
     if st.button("Search NCBI"):
         if s_query:
-            with st.spinner("Searching..."):
+            with st.spinner("Searching NCBI..."):
                 try:
                     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
                     res = requests.get(url, params={"db": s_type, "term": s_query, "retmode": "json", "retmax": 5}).json()
                     ids = res.get("esearchresult", {}).get("idlist", [])
                     if ids:
                         for rid in ids:
-                            st.markdown(f"🔗 [Record {rid}](https://www.ncbi.nlm.nih.gov/{s_type}/{rid})")
+                            st.markdown(f"🧬 [NCBI Record {rid}](https://www.ncbi.nlm.nih.gov/{s_type}/{rid})")
                     else:
-                        st.warning("No results found.")
+                        st.warning("No technical records found.")
                 except:
-                    st.error("API Connection Error.")
+                    st.error("NCBI Connection Error.")
 
 # =========================
 # TAB 6: HINDI HELPER
