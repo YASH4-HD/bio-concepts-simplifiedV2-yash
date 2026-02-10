@@ -479,81 +479,47 @@ with tabs[5]:
 # ==========================================
 with tabs[6]:
     st.header("🧬 Advanced Molecular Suite")
-    
-    # Input area
-    raw_seq = st.text_area("Paste DNA Sequence:", "ATGGCCATTGTAATGGGCCGCTGAAAGGGTACCCGATAG").upper().strip()
+    raw_seq = st.text_area("Paste DNA Sequence:", "ATGGCCATTGTAATGGGCCGCTGAAAGGGTACCCGATAG", key="dna_input_area").upper().strip()
     
     if raw_seq:
-        # 1. Calculations
+        # ... (keep your length and GC calculation lines here) ...
         seq_len = len(raw_seq)
         gc_count = raw_seq.count('G') + raw_seq.count('C')
         gc_content = (gc_count / seq_len) * 100 if seq_len > 0 else 0
-        at_content = 100 - gc_content
         
-        # 2. Advanced Metrics Row
-        col1, col2, col3, col4 = st.columns(4)
+        # 1. Metrics and Chart (Indented inside the IF)
+        col1, col2, col3 = st.columns(3)
         col1.metric("Length", f"{seq_len} bp")
         col2.metric("GC Content", f"{gc_content:.1f}%")
-        col3.metric("AT Content", f"{at_content:.1f}%")
-        # Molecular Weight Calculation (Average g/mol for DNA bases)
         mw = (raw_seq.count('A')*313.2) + (raw_seq.count('T')*304.2) + (raw_seq.count('C')*289.2) + (raw_seq.count('G')*329.2)
-        col4.metric("Est. Mol. Weight", f"{mw:,.1f} Da")
+        col3.metric("Mol. Weight", f"{mw:,.1f} Da")
 
-        # 3. Visualization
-        import pandas as pd
-        import plotly.express as px
-        base_data = pd.DataFrame({
-            'Nucleotide': ['A', 'T', 'G', 'C'],
-            'Count': [raw_seq.count('A'), raw_seq.count('T'), raw_seq.count('G'), raw_seq.count('C')]
-        })
-        fig = px.bar(base_data, x='Nucleotide', y='Count', color='Nucleotide', 
-                     color_discrete_map={'A':'#FF4B4B', 'T':'#1C83E1', 'G':'#00C78C', 'C':'#FACA2B'})
-        st.plotly_chart(fig, use_container_width=True)
-
-        # 4. The "Tools" Section (Expander style to keep it clean)
-        col_left, col_right = st.columns(2)
-        
-        with col_left:
-            with st.expander("🔗 Complementary Strand"):
+        # 2. Tools (Indented inside the IF)
+        c1, c2 = st.columns(2)
+        with c1:
+            with st.expander("🔗 Complementary Strand", expanded=True):
                 pairs = {"A": "T", "T": "A", "G": "C", "C": "G"}
                 comp = "".join([pairs.get(b, "N") for b in raw_seq])
-                st.code(f"5'- {raw_seq} -3'\n3'- {comp} -5'")
+                st.code(f"3'- {comp} -5'")
         
-        with col_right:
-            with st.expander("🧪 Protein Translation"):
-                # Simple Translation Logic
-               codon_map = {
-    'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
-    'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
-    'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
-    'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',
-    'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
-    'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
-    'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
-    'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
-    'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
-    'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
-    'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
-    'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
-    'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
-    'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
-    'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
-    'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W',
-} # Add more if needed
-protein = ""
-for i in range(0, len(raw_seq)-2, 3):
-    codon = raw_seq[i:i+3]
-    protein += codon_map.get(codon, '?')
-# THIS LINE below must be indented 2 levels so it stays inside the expander
-st.write(f"**Protein:** `{protein}`") 
+        with c2:
+            with st.expander("🧪 Protein Translation", expanded=True):
+                # FULL CODON MAP
+                codon_map = {'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M', 'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T', 'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K', 'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R', 'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L', 'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P', 'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q', 'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R', 'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V', 'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A', 'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E', 'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G', 'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S', 'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L', 'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_', 'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'}
+                protein = ""
+                for i in range(0, len(raw_seq)-2, 3):
+                    codon = raw_seq[i:i+3]
+                    protein += codon_map.get(codon, '?')
+                # THIS LINE BELOW puts it INSIDE the box
+                st.write(f"**Protein:** `{protein}`")
 
-        # 5. Scientific Insight (From your 2nd image)
-if gc_content > 60:
-    st.warning("⚠️ High GC Content: This sequence is very stable and might require higher melting temperatures in PCR.")
-elif gc_content < 40:
-    st.info("ℹ️ Low GC Content: Typical of AT-rich regions or specific regulatory elements.")
-else:
-    st.success("✅ Balanced GC Content: Normal genomic distribution.")        
+        # 3. Insight (Indented inside the IF so it doesn't show in other tabs)
+        if gc_content > 60:
+            st.warning("⚠️ High GC Content: Very stable sequence.")
+        elif gc_content < 40:
+            st.info("ℹ️ Low GC Content: AT-rich region.")
+        else:
+            st.success("✅ Balanced GC Content: Normal distribution.")      
 # =========================
 # SIDEBAR: RESEARCH REPORT
 # =========================
