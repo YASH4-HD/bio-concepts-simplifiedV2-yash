@@ -111,14 +111,14 @@ with tabs[0]:
             with st.expander("📘 Detailed Explanation"):
                 st.write(row.get("Detailed_Explanation", "No extra details available."))
         
-        with right:
-		# --- SPOILER FOR DIAGRAMS ---
-            with st.expander("🖼️ View Topic Diagram", expanded=False):
-            img = str(row.get("Image", ""))
-            if img and os.path.exists(img):
-            st.image(img, use_container_width=True, caption=f"Visual representation of {row.get('Topic')}")
-			else:
-                st.info("No diagram available for this topic.")
+			with right:
+			# --- SPOILER FOR DIAGRAMS ---
+				with st.expander("🖼️ View Topic Diagram", expanded=False):
+				img = str(row.get("Image", ""))
+				if img and os.path.exists(img):
+				st.image(img, use_container_width=True, caption=f"Visual representation of {row.get('Topic')}")
+				else:
+					st.info("No diagram available for this topic.")
 
 # =========================
 # TAB 2: 10 POINTS
