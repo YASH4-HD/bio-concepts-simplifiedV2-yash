@@ -1,19 +1,33 @@
 import streamlit as st
 import pandas as pd
 import os
-from deep_translator import GoogleTranslator
+import google.generativeai as genai
 import easyocr
+import re
 
 # =========================
 # PAGE CONFIG
 # =========================
 st.set_page_config(
-    page_title="Bio-Tech Smart Textbook",
+    page_title="Bio-Tech Smart AI Textbook",
+    page_icon="🧬",
     layout="wide"
 )
 
 # =========================
-# OCR INITIALIZATION
+# API SETUP (GEMINI)
+# =========================
+# Get your key from https://aistudio.google.com/
+GEMINI_API_KEY = "AIzaSyCmYzYISM5CpuAsiJ4eEZ3pBBL9XmYXGB8" 
+
+if GEMINI_API_KEY != "AIzaSyCmYzYISM5CpuAsiJ4eEZ3pBBL9XmYXGB8":
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    st.error("⚠️ Please insert your Gemini API Key in the code.")
+
+# =========================
+# OCR & DATA LOADING
 # =========================
 @st.cache_resource
 def load_ocr():
@@ -22,28 +36,44 @@ def load_ocr():
 reader = load_ocr()
 
 @st.cache_data
-def get_text_from_image(img_path):
-    if img_path and os.path.exists(img_path):
-        try:
-            text = reader.readtext(img_path, detail=0)
-            return " ".join(text).lower()
-        except Exception:
-            return ""
-    return ""
-
-# =========================
-# LOAD KNOWLEDGE BASE
-# =========================
-@st.cache_data
 def load_knowledge_base():
-    for file in ["knowledge.csv", "knowledge_base.csv"]:
+    # Try to load existing database
+    for file in ["knowledge_base.csv", "knowledge.csv"]:
         if os.path.exists(file):
             df = pd.read_csv(file)
             df.columns = df.columns.str.strip()
             return df
-    return None
+    # Fallback Data
+    return pd.DataFrame({
+        "Topic": ["DNA Replication", "PCR Technique"], 
+        "Explanation": ["DNA replication is the process by which a double-stranded DNA molecule is copied to produce two identical DNA molecules.", "Polymerase Chain Reaction is a method used to make millions of copies of a specific DNA sample."], 
+        "Ten_Points": ["Occurs in S-phase\nSemi-conservative\nRequires DNA Polymerase", "Denaturation at 94C\nAnnealing at 55C\nExtension at 72C"],
+        "Image": ["", ""]
+    })
 
 knowledge_df = load_knowledge_base()
+
+# =========================
+# AI LOGIC
+# =========================
+def ask_gemini_hinglish(text):
+    prompt = f"""
+    You are an expert Bio-Technology Teacher. 
+    Explain the following technical text in 'Hinglish' (Natural mix of Hindi and English) for an Indian college student.
+    
+    CRITICAL RULES:
+    1. Keep all technical terms (DNA, PCR, Enzymes, Primers, etc.) in English.
+    2. Use Roman script (English letters) for Hindi words (e.g., write 'kaise hota hai' instead of 'कैसे होता है').
+    3. Make it sound like a friendly 'Chat' style explanation.
+    4. Provide 3 short 'Exam Tips' in Hinglish at the end.
+
+    Text: {text}
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"AI Error: {str(e)}"
 
 # =========================
 # SESSION STATE
@@ -52,219 +82,84 @@ if "page_index" not in st.session_state:
     st.session_state.page_index = 0
 
 # =========================
-# TOPIC DETECTION
+# MAIN UI
 # =========================
-def detect_topic(text):
-    t = text.lower()
+st.title("🧬 Bio-Tech Smart AI Textbook")
+st.markdown("---")
 
-    if any(k in t for k in ["phenol", "ethanol", "dnase", "rnase", "extraction"]):
-        return "dna_extraction"
-    if any(k in t for k in ["pcr", "taq", "thermal cycling"]):
-        return "pcr"
-    if any(k in t for k in ["restriction enzyme", "endonuclease"]):
-        return "restriction"
-    if any(k in t for k in ["huntington", "ptc518", "votoplam"]):
-        return "neurogenetics"
-    if any(k in t for k in ["immunotherapy", "cd40", "antibody"]):
-        return "immunology"
+tabs = st.tabs(["📖 AI Reader", "🧠 10 Points", "🔬 DNA Lab", "🇮🇳 AI Hinglish Helper", "📊 Data Management"])
 
-    return "general"
-
-# =========================
-# SMART HINGLISH (DYNAMIC)
-# =========================
-def generate_hinglish(topic):
-    data = {
-        "dna_extraction": [
-            "Cell se DNA nikalne ke baad proteins remove kiye jaate hain.",
-            "RNase RNA ko degrade karta hai, DNase ko inactivate karna zaroori hota hai.",
-            "Phenol–chloroform extraction proteins ko separate karta hai.",
-            "Ethanol precipitation se DNA solution se bahar aata hai.",
-            "EDTA DNase activity ko inhibit karta hai."
-        ],
-        "pcr": [
-            "PCR ek technique hai jisme DNA ki multiple copies banti hain.",
-            "Taq polymerase heat-stable hota hai.",
-            "Thermal cycling mein denaturation, annealing aur extension steps hote hain."
-        ],
-        "restriction": [
-            "Restriction enzymes DNA ko specific palindromic sites par cut karte hain.",
-            "Ye molecular cloning ke liye important hote hain.",
-            "Sticky ends ligation ko easy banaate hain."
-        ],
-        "neurogenetics": [
-            "Huntington’s disease ek genetic neurodegenerative disorder hai.",
-            "PTC518 (Votoplam) ek splicing modifier hai.",
-            "Ye mutant huntingtin expression ko reduce karta hai."
-        ],
-        "immunology": [
-            "Immunotherapy immune system ko activate karti hai.",
-            "CD40 immune activation mein important role play karta hai.",
-            "Antibody-based therapies targeted hoti hain."
-        ],
-        "general": [
-            "Yeh biology ka ek important concept hai.",
-            "Exam ke liye definition aur mechanism samajhna kaafi hota hai."
-        ]
-    }
-
-    return "\n".join("• " + line for line in data[topic])
-
-# =========================
-# EXAM TIPS (DYNAMIC)
-# =========================
-def generate_exam_tips(topic):
-    tips = {
-        "dna_extraction": [
-            "DNase DNA ko degrade karta hai, isliye EDTA use hota hai.",
-            "RNase heat-stable hota hai, DNase nahi.",
-            "Phenol–chloroform protein removal ke liye hota hai."
-        ],
-        "pcr": [
-            "Taq polymerase Thermus aquaticus se milta hai.",
-            "PCR exponential amplification dikhata hai.",
-            "Annealing temperature primer-dependent hota hai."
-        ],
-        "restriction": [
-            "Most restriction enzymes Type II hote hain.",
-            "Recognition sites palindromic hoti hain.",
-            "Sticky ends blunt ends se better hote hain."
-        ],
-        "neurogenetics": [
-            "Huntington’s disease autosomal dominant hoti hai.",
-            "CAG repeat expansion HTT gene mein hota hai.",
-            "Splicing modifiers gene expression alter karte hain."
-        ],
-        "immunology": [
-            "CD40–CD40L interaction immune activation ke liye important hai.",
-            "Monoclonal antibodies targeted therapy hoti hain.",
-            "Immunotherapy adaptive immunity ko activate karti hai."
-        ],
-        "general": [
-            "Definition + mechanism + application exam ke liye enough hota hai."
-        ]
-    }
-    return tips[topic]
-
-# =========================
-# MAIN APP
-# =========================
-if knowledge_df is None:
-    st.error("❌ Knowledge base CSV not found.")
-    st.stop()
-
-tabs = st.tabs([
-    "📖 Reader",
-    "🧠 10 Points",
-    "🔬 DNA Lab",
-    "🔍 Search",
-    "📊 Data",
-    "🇮🇳 Hinglish Helper"
-])
-
-# =========================
-# TAB 1: READER
-# =========================
+# 1. AI READER
 with tabs[0]:
     col1, col2, col3 = st.columns([1, 2, 1])
-
-    if col1.button("⬅ Previous"):
-        st.session_state.page_index = max(0, st.session_state.page_index - 1)
-        st.rerun()
-
-    col2.markdown(
-        f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</h3>",
-        unsafe_allow_html=True
-    )
-
-    if col3.button("Next ➡"):
-        st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
-        st.rerun()
-
-    st.divider()
+    with col1:
+        if st.button("⬅ Previous"):
+            st.session_state.page_index = max(0, st.session_state.page_index - 1)
+    with col2:
+        st.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>", unsafe_allow_html=True)
+    with col3:
+        if st.button("Next ➡"):
+            st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
+    
     row = knowledge_df.iloc[st.session_state.page_index]
-
-    left, right = st.columns([2, 1])
+    
+    left, right = st.columns([1, 1])
     with left:
-        st.header(row.get("Topic", "Untitled"))
-        st.write(row.get("Explanation", ""))
-
-        with st.expander("📘 Read Detailed Explanation"):
-            st.write(row.get("Detailed_Explanation", "No extra explanation available."))
+        st.header(row['Topic'])
+        st.write(row['Explanation'])
+        if st.button("✨ Explain in Hinglish"):
+            with st.spinner("Gemini is drafting your notes..."):
+                explanation = ask_gemini_hinglish(row['Explanation'])
+                st.info(explanation)
 
     with right:
-        img = str(row.get("Image", ""))
-        if img and os.path.exists(img):
-            with st.expander("🖼️ Show Diagram"):
-                st.image(img, use_container_width=True)
+        img_path = str(row.get('Image', ""))
+        if img_path and os.path.exists(img_path):
+            st.image(img_path, caption=row['Topic'], use_container_width=True)
+        else:
+            st.warning("No diagram found for this topic.")
 
-# =========================
-# TAB 2: 10 POINTS
-# =========================
+# 2. 10 POINTS
 with tabs[1]:
-    st.header("🧠 10 Key Exam Points")
-    points = row.get("Ten_Points", "")
-    if isinstance(points, str) and points.strip():
-        for p in points.split("\n"):
-            st.write("•", p.strip())
-    else:
-        st.info("No exam points available.")
+    st.header(f"Revison Points: {row['Topic']}")
+    points = str(row['Ten_Points']).split('\n')
+    for p in points:
+        if p.strip():
+            st.success(f"🔹 {p}")
 
-# =========================
-# TAB 3: DNA LAB
-# =========================
+# 3. DNA LAB
 with tabs[2]:
-    st.header("🔬 DNA Analysis Tool")
-    seq = st.text_area("Paste DNA sequence:", "ATGC").upper()
-    if st.button("Analyze"):
-        st.metric("GC Content", f"{(seq.count('G') + seq.count('C')) / len(seq) * 100:.2f}%")
+    st.header("🔬 Sequence Tools")
+    dna_input = st.text_area("Paste DNA Sequence:", "ATGCATGCATGC").upper()
+    if st.button("Analyze Sequence"):
+        gc_content = (dna_input.count('G') + dna_input.count('C')) / len(dna_input) * 100
+        st.metric("GC Content", f"{gc_content:.2f}%")
+        st.write(f"**Complimentary Strand:** {dna_input.replace('A','t').replace('T','a').replace('G','c').replace('C','g').upper()}")
 
-# =========================
-# TAB 4: SEARCH
-# =========================
+# 4. AI HINGLISH HELPER (CUSTOM INPUT)
 with tabs[3]:
-    st.header("🔍 Smart Search")
-    query = st.text_input("Search term").lower()
-    for i, r in knowledge_df.iterrows():
-        if query and query in str(r.get("Topic", "")).lower():
-            with st.expander(r["Topic"]):
-                st.write(r["Explanation"])
-                if st.button("Go", key=i):
-                    st.session_state.page_index = i
-                    st.rerun()
+    st.header("🇮🇳 Custom AI Hinglish Translator")
+    st.write("Paste text from any source (PDF/Web) to get an instant Hinglish breakdown.")
+    
+    user_text = st.text_area("Enter English Text:", height=200, placeholder="Example: CRISPR-Cas9 is a unique technology that enables geneticists to edit parts of the genome...")
+    
+    if st.button("Convert with Gemini"):
+        if user_text:
+            with st.spinner("AI is processing..."):
+                result = ask_gemini_hinglish(user_text)
+                st.markdown("### 📝 AI Notes")
+                st.write(result)
+        else:
+            st.warning("Please enter text.")
 
-# =========================
-# TAB 5: DATA
-# =========================
+# 5. DATA MANAGEMENT
 with tabs[4]:
-    file = st.file_uploader("Upload CSV", type="csv")
-    if file:
-        st.dataframe(pd.read_csv(file))
-
-# =========================
-# TAB 6: HINGLISH HELPER (FINAL)
-# =========================
-with tabs[5]:
-    st.header("🇮🇳 Hindi & Hinglish Helper")
-
-    text = st.text_area("Paste English text here:", height=150)
-
-    if st.button("Translate & Explain"):
-        hindi = GoogleTranslator(source="auto", target="hi").translate(text)
-        topic = detect_topic(text)
-        hinglish = generate_hinglish(topic)
-        exam_tips = generate_exam_tips(topic)
-
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("📝 Pure Hindi")
-            st.info(hindi)
-
-        with c2:
-            st.subheader("🗣 Smart Hinglish")
-            st.code(hinglish, language="text")
-
-        st.divider()
-        st.subheader("🧠 Exam Tips")
-        for tip in exam_tips:
-            st.info("• " + tip)
+    st.header("📊 Database Settings")
+    st.dataframe(knowledge_df)
+    
+    uploaded_file = st.file_uploader("Update Database (CSV)", type="csv")
+    if uploaded_file:
+        new_df = pd.read_csv(uploaded_file)
+        if st.button("Confirm & Save"):
+            new_df.to_csv("knowledge_base.csv", index=False)
+            st.success("Database Updated!")
