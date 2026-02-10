@@ -290,26 +290,49 @@ with tabs[2]:
             st.warning("Please enter a sequence first.")
 
 # =========================
-# TAB 4: INTERNAL SEARCH
+# TAB 4: INTERNAL SEARCH (Updated)
 # =========================
 with tabs[3]:
-    st.header("🔍 Search Internal Textbook")
-    query = st.text_input("Search for a term (Text or Diagram)...").lower()
+    st.header("🔍 Smart Textbook Search")
+    st.info("Search across text content and diagram labels (via OCR).")
+    
+    query = st.text_input("Enter a term to search (e.g., 'DNA', 'Polymerase')...").lower()
+    
     if query:
         found = False
         for i, r in knowledge_df.iterrows():
+            # Check Text
             txt_match = query in str(r['Topic']).lower() or query in str(r['Explanation']).lower()
-            img_text = get_text_from_image(str(r.get('Image', '')))
-            if txt_match or query in img_text:
+            
+            # Check Image via OCR
+            img_path = str(r.get('Image', ''))
+            img_text = get_text_from_image(img_path)
+            ocr_match = query in img_text
+            
+            if txt_match or ocr_match:
                 found = True
-                with st.expander(f"📖 {r['Topic']} (Page {i+1})"):
-                    st.write(r['Explanation'])
-                    if query in img_text: st.success("Found in Diagram!")
-                    if st.button(f"Go to Page {i+1}", key=f"src_{i}"):
-                        st.session_state.page_index = i
-                        st.rerun()
-        if not found: st.warning("No matches found.")
-
+                with st.expander(f"📖 {r['Topic']} (Page {i+1})", expanded=True):
+                    col_text, col_img = st.columns([2, 1])
+                    
+                    with col_text:
+                        if txt_match:
+                            st.markdown("✅ **Found in Text**")
+                        if ocr_match:
+                            st.markdown("👁️ **Found in Diagram (OCR)**")
+                        
+                        st.write(r['Explanation'][:300] + "...") # Show preview
+                        if st.button(f"Go to Page {i+1}", key=f"search_btn_{i}"):
+                            st.session_state.page_index = i
+                            st.rerun()
+                            
+                    with col_img:
+                        if img_path and os.path.exists(img_path):
+                            st.image(img_path, caption="Related Diagram", use_container_width=True)
+                        else:
+                            st.caption("No image available")
+                            
+        if not found:
+            st.warning(f"No results found for '{query}'. Try checking the 'Global Bio-Search' tab!")
 # =========================
 # TAB 5: GLOBAL BIO-SEARCH
 # =========================
