@@ -109,58 +109,64 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-                                                                      # --- CLEAN LEFT-ALIGNED NAVIGATION ---
+                                                                             # --- THE ULTIMATE NAVIGATION FIX ---
         st.markdown("""
             <style>
-                /* Style only the buttons in this specific tab */
+                /* Style the buttons to be sleek and blue */
                 div.stButton > button {
                     background-color: #1e468a !important;
                     color: white !important;
                     border-radius: 8px !important;
-                    height: 45px !important;
+                    height: 42px !important;
                     border: none !important;
                     font-weight: bold !important;
                     width: 100% !important;
                 }
-                /* Style the Page indicator box */
+                /* Style the Page indicator box precisely */
                 .page-indicator {
                     text-align: center;
                     background: #f0f2f6;
                     border-radius: 8px;
-                    padding: 5px;
-                    height: 45px;
+                    padding: 4px;
+                    height: 42px;
                     border: 1px solid #d1d5db;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # 1. TOP PROGRESS BAR
+        # 1. TOP PROGRESS BAR (As suggested in your tip image)
         progress_value = (st.session_state.page_index + 1) / len(knowledge_df)
         st.progress(progress_value)
 
-        # 2. THE NAVIGATION ROW
-        # [1, 1.2, 1, 5] keeps the first three items tight to the left
-        col1, col2, col3, col4 = st.columns([1, 1.2, 1, 5])
+        # 2. THE 5-COLUMN SOLUTION (Adjusted for Left-Alignment)
+        # Using [1, 1.5, 1, 4] puts the buttons close together on the left
+        c1, c2, c3, c4 = st.columns([1, 1.5, 1, 4], gap="small")
         
-        with col1:
-            if st.button("⬅ PREV"):
+        with c1:
+            # Disable button if on first page (Pro tip from your image)
+            if st.button("⬅ PREV", disabled=st.session_state.page_index == 0):
                 st.session_state.page_index = max(0, st.session_state.page_index - 1)
                 st.rerun()
         
-        with col2:
+        with c2:
             st.markdown(f"""
                 <div class="page-indicator">
-                    <small style='color:#555; font-size:0.6rem; text-transform: uppercase; display:block; line-height:1;'>PAGE</small>
-                    <span style='font-weight:bold; font-size:1rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
+                    <small style='color:#555; font-size:0.6rem; text-transform: uppercase; line-height:1;'>PAGE</small>
+                    <span style='font-weight:bold; font-size:0.95rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
                 </div>
             """, unsafe_allow_html=True)
         
-        with col3:
-            if st.button("NEXT ➡"):
+        with c3:
+            # Disable button if on last page (Pro tip from your image)
+            if st.button("NEXT ➡", disabled=st.session_state.page_index == len(knowledge_df) - 1):
                 st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
                 st.rerun()
 
         st.divider()
+
 
 
 
