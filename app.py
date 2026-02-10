@@ -52,45 +52,36 @@ if "page_index" not in st.session_state:
     st.session_state.page_index = 0
 
 # =========================
-# SMART HINGLISH ENGINE (FINAL HD FIX)
+# SMART HINGLISH ENGINE (ULTIMATE FIX)
 # =========================
-def generate_smart_hinglish(english_text, hindi_text):
-    from indic_transliteration import sanscript
-    from indic_transliteration.sanscript import transliterate
-    import re
+from indic_transliteration import sanscript
+from indic_transliteration.sanscript import transliterate
+import re
 
+def generate_smart_hinglish(english_text, hindi_text):
     # 1. Convert Hindi to Roman sounds
     raw_roman = transliterate(hindi_text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
 
-    # 2. Fix the "Chat" sounds
+    # 2. Fix Chat Sounds
     sound_fixes = {
         "shha": "sh", "aa": "a", "haim": "hain", "mam": "mein", 
         "upayoga": "use", "karake": "karke", "lie": "liye",
-        "vishi": "specific", "badhane": "increase"
+        "vishi": "specific", "badhane": "increase", "lakshyom": "targets"
     }
     for old, new in sound_fixes.items():
         raw_roman = raw_roman.replace(old, new)
 
-    # 3. THE SHIELD: Force English words back
-    # This list prevents "dienae" and "saikalimga"
-    protected_terms = [
-        "dna", "taq", "thermal", "cycling", "amplify", 
-        "pcr", "enzyme", "specific", "targets", "sequences"
-    ]
+    # 3. THE HARD-SWAP (Fixes 'dienae' and 'saikalimga')
+    # We look at the original English words and force them back
+    important_terms = ["dna", "taq", "thermal", "cycling", "amplify", "specific", "targets", "pcr", "enzyme"]
     
-    # We check every word in the original English input
-    original_words = re.findall(r'\b\w+\b', english_text.lower())
-    for word in original_words:
-        if word in protected_terms:
-            # Find the butchered version (like 'dienae' or 'tharmala') and replace with original
-            # We look for a word that starts with the same 2 letters
-            pattern = r'\b' + word[:2] + r'[a-z]*\b'
-            raw_roman = re.sub(pattern, word, raw_roman)
+    for term in important_terms:
+        if term in english_text.lower():
+            # This regex finds any butchered word starting with the same 2 letters and replaces it
+            # e.g., it finds 'dienae' and replaces with 'DNA'
+            pattern = r'\b' + term[:2] + r'[a-z]*\b'
+            raw_roman = re.sub(pattern, term.upper() if term == "dna" else term, raw_roman)
 
-    # Final cleanup for common artifacts
-    raw_roman = raw_roman.replace("dna", "DNA").replace("taq", "Taq")
-    raw_roman = raw_roman.replace("saikalimga", "cycling").replace("tharmala", "thermal")
-    
     return raw_roman.strip().capitalize()
 # =========================
 # MAIN APP
@@ -213,7 +204,7 @@ with tabs[4]:
         st.dataframe(pd.read_csv(file))
 
 # =========================
-# TAB 6: HINGLISH HELPER (FIXED)
+# TAB 6: HINGLISH HELPER (FIXED + COPY BUTTON)
 # =========================
 with tabs[5]:
     st.header("🇮🇳 Hindi & Hinglish Helper")
@@ -236,7 +227,11 @@ with tabs[5]:
                 with c2:
                     st.subheader("🗣 Smart Hinglish (Clean)")
                     st.success(hinglish_res)
-                    st.code(hinglish_res, language="text") # Easy copy button
+                    
+                    # --- THE COPY BUTTON ---
+                    # Using st.code gives a built-in copy button on the top right
+                    st.code(hinglish_res, language="text")
+                    st.caption("Click the icon in the top-right of the box above to copy.")
 
                 # 3. Term Suggestion & Exam Tips
                 st.divider()
@@ -244,23 +239,33 @@ with tabs[5]:
                 
                 with col_a:
                     st.subheader("🔍 Did you mean?")
-                    # Simple spell check for biotech terms
-                    dictionary = ["enzyme", "purification", "isolation", "polymerase"]
-                    for word in input_text.lower().split():
+                    # Check for common typos
+                    dictionary = ["enzyme", "purification", "isolation", "polymerase", "cycling"]
+                    words_in_input = input_text.lower().split()
+                    found_typo = False
+                    for word in words_in_input:
+                        clean_w = word.strip(".,()")
                         for correct in dictionary:
-                            if len(word) > 4 and word[:4] == correct[:4] and word != correct:
-                                st.warning(f"Found '{word}', did you mean **{correct}**?")
+                            if len(clean_w) > 3 and clean_w[:3] == correct[:3] and clean_w != correct:
+                                st.warning(f"Found '{clean_w}', did you mean **{correct}**?")
+                                found_typo = True
+                    if not found_typo:
+                        st.write("All scientific terms look correct!")
 
                 with col_b:
                     st.subheader("🔬 Exam Tips")
                     tips = {
-                        "pcr": "💡 Mention the temperature for Denaturation (94°C).",
+                        "pcr": "💡 Mention the 3 steps: Denaturation, Annealing, Extension.",
                         "taq": "💡 Mention it is isolated from Thermus aquaticus.",
-                        "dna": "💡 Mention it is negatively charged.",
-                        "cycling": "💡 Mention that 30 cycles can make 1 billion copies."
+                        "dna": "💡 Mention it is negatively charged and moves toward Anode.",
+                        "cycling": "💡 Mention that thermal cycling is automated using a Thermocycler."
                     }
+                    has_tip = False
                     for k, v in tips.items():
                         if k in input_text.lower():
                             st.info(v)
+                            has_tip = True
+                    if not has_tip:
+                        st.write("Write clearly and use diagrams for better marks!")
         else:
             st.warning("Please enter text.")
