@@ -52,39 +52,46 @@ if "page_index" not in st.session_state:
     st.session_state.page_index = 0
 
 # =========================
-# SMART HINGLISH ENGINE (FIXED)
+# SMART HINGLISH ENGINE (FINAL HD FIX)
 # =========================
-def generate_smart_hinglish(english_text):
-    # 1. First, get a basic translation to Hindi
-    try:
-        hindi_trans = GoogleTranslator(source="auto", target="hi").translate(english_text)
-    except:
-        return "Translation Error"
-
-    # 2. Convert that Hindi into Roman (English alphabet) script
-    # This ensures even long sentences work
+def generate_smart_hinglish(english_text, hindi_text):
     from indic_transliteration import sanscript
     from indic_transliteration.sanscript import transliterate
-    
-    hinglish = transliterate(hindi_trans, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
+    import re
 
-    # 3. Fix the "broken" sounds to natural chat style
-    replacements = {
-        "shha": "sh", "aa": "a", "haim": "hain", "mam": "mein", "denae": "DNA",
-        "upayoga": "use", "karke": "karke", "liye": "liye", "vishi": "specific"
+    # 1. Convert Hindi to Roman sounds
+    raw_roman = transliterate(hindi_text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
+
+    # 2. Fix the "Chat" sounds
+    sound_fixes = {
+        "shha": "sh", "aa": "a", "haim": "hain", "mam": "mein", 
+        "upayoga": "use", "karake": "karke", "lie": "liye",
+        "vishi": "specific", "badhane": "increase"
     }
-    for old, new in replacements.items():
-        hinglish = hinglish.replace(old, new)
+    for old, new in sound_fixes.items():
+        raw_roman = raw_roman.replace(old, new)
 
-    # 4. Force specific Biotech words to stay in English
-    bio_words = ["dna", "rna", "isolation", "purification", "analysis", "enzyme", "pcr"]
-    for word in bio_words:
-        if word in english_text.lower():
-            import re
-            pattern = r'\b' + word[:3] + r'[a-z]*\b'
-            hinglish = re.sub(pattern, word, hinglish)
+    # 3. THE SHIELD: Force English words back
+    # This list prevents "dienae" and "saikalimga"
+    protected_terms = [
+        "dna", "taq", "thermal", "cycling", "amplify", 
+        "pcr", "enzyme", "specific", "targets", "sequences"
+    ]
+    
+    # We check every word in the original English input
+    original_words = re.findall(r'\b\w+\b', english_text.lower())
+    for word in original_words:
+        if word in protected_terms:
+            # Find the butchered version (like 'dienae' or 'tharmala') and replace with original
+            # We look for a word that starts with the same 2 letters
+            pattern = r'\b' + word[:2] + r'[a-z]*\b'
+            raw_roman = re.sub(pattern, word, raw_roman)
 
-    return hinglish.capitalize()
+    # Final cleanup for common artifacts
+    raw_roman = raw_roman.replace("dna", "DNA").replace("taq", "Taq")
+    raw_roman = raw_roman.replace("saikalimga", "cycling").replace("tharmala", "thermal")
+    
+    return raw_roman.strip().capitalize()
 # =========================
 # MAIN APP
 # =========================
@@ -206,22 +213,54 @@ with tabs[4]:
         st.dataframe(pd.read_csv(file))
 
 # =========================
-# TAB 6: HINGLISH HELPER
+# TAB 6: HINGLISH HELPER (FIXED)
 # =========================
 with tabs[5]:
     st.header("🇮🇳 Hindi & Hinglish Helper")
-    text_area = st.text_area("Paste English sentence here:", height=100)
+    
+    input_text = st.text_area("Paste English sentence here:", height=100)
+
     if st.button("Translate & Explain"):
-        if text_area.strip():
+        if input_text.strip():
             with st.spinner("Processing..."):
-                hindi = GoogleTranslator(source="auto", target="hi").translate(text_area)
-                hinglish = generate_smart_hinglish(text_area)
+                # 1. Get Pure Hindi
+                hindi_res = GoogleTranslator(source="auto", target="hi").translate(input_text)
+
+                # 2. Get Clean Hinglish
+                hinglish_res = generate_smart_hinglish(input_text, hindi_res)
+
                 c1, c2 = st.columns(2)
                 with c1:
                     st.subheader("📝 Pure Hindi")
-                    st.info(hindi)
+                    st.info(hindi_res)
                 with c2:
-                    st.subheader("🗣 Smart Hinglish")
-                    st.success(hinglish)
+                    st.subheader("🗣 Smart Hinglish (Clean)")
+                    st.success(hinglish_res)
+                    st.code(hinglish_res, language="text") # Easy copy button
+
+                # 3. Term Suggestion & Exam Tips
+                st.divider()
+                col_a, col_b = st.columns(2)
+                
+                with col_a:
+                    st.subheader("🔍 Did you mean?")
+                    # Simple spell check for biotech terms
+                    dictionary = ["enzyme", "purification", "isolation", "polymerase"]
+                    for word in input_text.lower().split():
+                        for correct in dictionary:
+                            if len(word) > 4 and word[:4] == correct[:4] and word != correct:
+                                st.warning(f"Found '{word}', did you mean **{correct}**?")
+
+                with col_b:
+                    st.subheader("🔬 Exam Tips")
+                    tips = {
+                        "pcr": "💡 Mention the temperature for Denaturation (94°C).",
+                        "taq": "💡 Mention it is isolated from Thermus aquaticus.",
+                        "dna": "💡 Mention it is negatively charged.",
+                        "cycling": "💡 Mention that 30 cycles can make 1 billion copies."
+                    }
+                    for k, v in tips.items():
+                        if k in input_text.lower():
+                            st.info(v)
         else:
             st.warning("Please enter text.")
