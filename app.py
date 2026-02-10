@@ -179,7 +179,7 @@ with tabs[0]:
         
         with st.expander("📘 Detailed Analysis & Mechanism"):
             st.write(row.get("Detailed_Explanation", "No extra details available."))
-        if st.button("➕ Add to Research Report"):
+        if st.button("Add to Research Report", icon="➕", use_container_width=False):
                 if 'report_list' not in st.session_state:
                     st.session_state['report_list'] = []
                 
