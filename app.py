@@ -1,93 +1,56 @@
 import streamlit as st
 import pandas as pd
 import os
-import google.generativeai as genai
 import easyocr
-import re
+import google.generativeai as genai
+from deep_translator import GoogleTranslator
 
 # =========================
 # PAGE CONFIG
 # =========================
 st.set_page_config(
-    page_title="Bio-Tech Smart AI Textbook",
-    page_icon="🧬",
+    page_title="Bio-Tech Smart Textbook",
     layout="wide"
 )
 
 # =========================
-# API SETUP (SECURE & ERROR-PROOF)
+# GEMINI CONFIG (SAFE)
 # =========================
-# This looks for GEMINI_API_KEY in your Streamlit Cloud Secrets
-if "GEMINI_API_KEY" in st.secrets:
-    try:
-        API_KEY = st.secrets["GEMINI_API_KEY"]
-        genai.configure(api_key=API_KEY)
-        
-        # Fallback Logic: Try Flash first, then Pro
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            # Test connection
-            model.generate_content("test") 
-        except Exception:
-            model = genai.GenerativeModel('gemini-pro')
-            
-    except Exception as e:
-        st.error(f"Failed to initialize Gemini: {e}")
-else:
-    st.error("🔑 API Key not found! Please add 'GEMINI_API_KEY' to Streamlit Secrets.")
-    st.stop()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 
 # =========================
-# DATA LOADING
+# OCR INITIALIZATION
+# =========================
+@st.cache_resource
+def load_ocr():
+    return easyocr.Reader(['en'])
+
+reader = load_ocr()
+
+@st.cache_data
+def get_text_from_image(img_path):
+    if img_path and os.path.exists(img_path):
+        try:
+            text = reader.readtext(img_path, detail=0)
+            return " ".join(text).lower()
+        except Exception:
+            return ""
+    return ""
+
+# =========================
+# LOAD KNOWLEDGE BASE
 # =========================
 @st.cache_data
 def load_knowledge_base():
-    file_path = "knowledge_base.csv"
-    if os.path.exists(file_path):
-        try:
-            df = pd.read_csv(file_path)
-            df.columns = df.columns.str.strip() # Remove hidden spaces
+    for file in ["knowledge.csv", "knowledge_base.csv"]:
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            df.columns = df.columns.str.strip()
             return df
-        except Exception as e:
-            st.error(f"Error reading CSV: {e}")
-    
-    # Default data if file is missing
-    return pd.DataFrame({
-        "Topic": ["Welcome to Bio-Tech AI"], 
-        "Explanation": ["Please upload your knowledge_base.csv in the Data Management tab."], 
-        "Ten_Points": ["1. Upload CSV\n2. Set API Key\n3. Start Learning"],
-        "Image": [""]
-    })
+    return None
 
 knowledge_df = load_knowledge_base()
-
-def get_col_data(row, possible_names, default="Not Available"):
-    for name in possible_names:
-        if name in row:
-            return str(row[name])
-    return default
-
-# =========================
-# AI LOGIC
-# =========================
-def ask_gemini_hinglish(text):
-    prompt = f"""
-    Explain this Bio-Technology concept in 'Hinglish' (Natural mix of Hindi and English in Roman script).
-    - Keep technical terms (DNA, PCR, CRISPR, Enzymes, etc.) in English.
-    - Use a friendly, conversational 'Chat' style tone.
-    - Explain like you are talking to a student.
-    - Write Hindi words using English letters.
-    
-    Text to explain: {text}
-    """
-    try:
-        response = model.generate_content(prompt)
-        if response and response.text:
-            return response.text
-        else:
-            return "AI was unable to generate a response. Please try again."
-    except Exception as e:
-        return f"AI Error: {str(e)}. Please check if your API key is active."
 
 # =========================
 # SESSION STATE
@@ -96,108 +59,202 @@ if "page_index" not in st.session_state:
     st.session_state.page_index = 0
 
 # =========================
-# MAIN UI
+# TOPIC DETECTION
 # =========================
-st.title("🧬 Bio-Tech Smart AI Textbook")
+def detect_topic(text):
+    t = text.lower()
+    if any(k in t for k in ["phenol", "ethanol", "dnase", "rnase", "extraction"]):
+        return "DNA extraction"
+    if any(k in t for k in ["pcr", "taq", "thermal cycling"]):
+        return "PCR"
+    if any(k in t for k in ["restriction enzyme", "endonuclease"]):
+        return "Restriction enzymes"
+    if any(k in t for k in ["huntington", "ptc518", "votoplam"]):
+        return "Neurogenetics"
+    if any(k in t for k in ["immunotherapy", "cd40", "antibody"]):
+        return "Immunology"
+    return "General biology"
 
-tabs = st.tabs(["📖 AI Reader", "🧠 10 Points", "🔬 DNA Lab", "🇮🇳 AI Hinglish Helper", "📊 Data Management"])
+# =========================
+# RULE-BASED HINGLISH (FALLBACK)
+# =========================
+def rule_based_hinglish(topic):
+    data = {
+        "DNA extraction": [
+            "Cell se DNA nikalne ke baad proteins remove kiye jaate hain.",
+            "RNase RNA ko degrade karta hai, DNase ko inactivate karna zaroori hota hai.",
+            "Phenol–chloroform extraction proteins ko separate karta hai.",
+            "Ethanol precipitation se DNA solution se bahar aata hai.",
+            "EDTA DNase activity ko inhibit karta hai."
+        ],
+        "PCR": [
+            "PCR DNA amplification ki technique hai.",
+            "Taq polymerase heat-stable hota hai.",
+            "Thermal cycling mein denaturation, annealing aur extension steps hote hain."
+        ],
+        "Restriction enzymes": [
+            "Restriction enzymes DNA ko palindromic sequences par cut karte hain.",
+            "Ye molecular cloning ke liye important hote hain.",
+            "Sticky ends ligation ko easy banaate hain."
+        ],
+        "Neurogenetics": [
+            "Huntington’s disease ek genetic neurodegenerative disorder hai.",
+            "PTC518 (Votoplam) ek splicing modifier hai.",
+            "Ye mutant huntingtin expression ko reduce karta hai."
+        ],
+        "Immunology": [
+            "Immunotherapy immune system ko activate karti hai.",
+            "CD40 immune activation mein important role play karta hai.",
+            "Antibody-based therapies targeted hoti hain."
+        ],
+        "General biology": [
+            "Yeh biology ka important concept hai.",
+            "Exam ke liye definition aur mechanism samajhna kaafi hota hai."
+        ]
+    }
+    return "\n".join("• " + x for x in data[topic])
 
-# Safety check for empty dataframe
-if not knowledge_df.empty:
-    row = knowledge_df.iloc[st.session_state.page_index]
-else:
-    st.error("Database is empty.")
+# =========================
+# GEMINI HINGLISH (OPTIONAL)
+# =========================
+def gemini_hinglish(text, topic):
+    prompt = f"""
+You are a senior Indian biology teacher.
+
+Explain in SIMPLE HINGLISH.
+Rules:
+- Bullet points (max 6)
+- Exam oriented
+- Scientific terms in English
+- No extra details
+- No hallucinations
+
+Topic: {topic}
+Text: {text}
+"""
+    response = gemini_model.generate_content(
+        prompt,
+        generation_config={
+            "temperature": 0.3,
+            "max_output_tokens": 250
+        }
+    )
+    return response.text.strip()
+
+# =========================
+# MAIN APP
+# =========================
+if knowledge_df is None:
+    st.error("❌ Knowledge base CSV not found.")
     st.stop()
 
-# --- TAB 1: AI READER ---
+tabs = st.tabs([
+    "📖 Reader",
+    "🧠 10 Points",
+    "🔬 DNA Lab",
+    "🔍 Search",
+    "📊 Data",
+    "🇮🇳 Hinglish Helper"
+])
+
+# =========================
+# TAB 1: READER
+# =========================
 with tabs[0]:
     col1, col2, col3 = st.columns([1, 2, 1])
-    with col1:
-        if st.button("⬅ Previous"):
-            st.session_state.page_index = max(0, st.session_state.page_index - 1)
-            st.rerun()
-    with col2:
-        st.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>", unsafe_allow_html=True)
-    with col3:
-        if st.button("Next ➡"):
-            st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
-            st.rerun()
-    
-    st.divider()
-    
-    left, right = st.columns([1, 1])
+    if col1.button("⬅ Previous"):
+        st.session_state.page_index = max(0, st.session_state.page_index - 1)
+        st.rerun()
+
+    col2.markdown(
+        f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</h3>",
+        unsafe_allow_html=True
+    )
+
+    if col3.button("Next ➡"):
+        st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
+        st.rerun()
+
+    row = knowledge_df.iloc[st.session_state.page_index]
+    left, right = st.columns([2, 1])
     with left:
-        topic = get_col_data(row, ["Topic", "topic", "Title"])
-        expl = get_col_data(row, ["Explanation", "explanation", "Content"])
-        
-        st.header(topic)
-        st.write(expl)
-        
-        if st.button("✨ AI Hinglish Explanation"):
-            with st.spinner("Gemini is explaining..."):
-                result = ask_gemini_hinglish(expl)
-                st.info(result)
-
+        st.header(row.get("Topic", "Untitled"))
+        st.write(row.get("Explanation", ""))
+        with st.expander("📘 Read Detailed Explanation"):
+            st.write(row.get("Detailed_Explanation", "No extra explanation available."))
     with right:
-        img_path = get_col_data(row, ["Image", "image", "Picture"], "")
-        if img_path and os.path.exists(img_path):
-            st.image(img_path, use_container_width=True)
-        else:
-            st.info("No diagram found for this topic.")
+        img = str(row.get("Image", ""))
+        if img and os.path.exists(img):
+            with st.expander("🖼️ Show Diagram"):
+                st.image(img, use_container_width=True)
 
-# --- TAB 2: 10 POINTS ---
+# =========================
+# TAB 2: 10 POINTS
+# =========================
 with tabs[1]:
-    topic = get_col_data(row, ["Topic", "topic"])
-    st.header(f"Quick Revision: {topic}")
-    
-    points_text = get_col_data(row, ["Ten_Points", "Points", "ten_points", "Key Points"])
-    
-    if points_text != "Not Available":
-        points_list = points_text.split('\n')
-        for p in points_list:
-            if p.strip():
-                st.success(f"🔹 {p.strip()}")
+    st.header("🧠 10 Key Exam Points")
+    points = row.get("Ten_Points", "")
+    if isinstance(points, str) and points.strip():
+        for p in points.split("\n"):
+            st.write("•", p.strip())
     else:
-        st.warning("No revision points found in CSV. Ensure you have a 'Ten_Points' column.")
+        st.info("No exam points available.")
 
-# --- TAB 3: DNA LAB ---
+# =========================
+# TAB 3: DNA LAB
+# =========================
 with tabs[2]:
-    st.header("🔬 DNA Sequence Analyzer")
-    dna = st.text_input("Enter DNA Sequence:", "ATGCATGC").upper()
-    if dna:
-        # Basic Bio-informatics logic
-        valid_dna = all(base in "ATGC" for base in dna)
-        if valid_dna:
-            gc = (dna.count('G') + dna.count('C')) / len(dna) * 100
-            st.metric("GC Content", f"{gc:.2f}%")
-            st.write(f"**Sequence Length:** {len(dna)} bp")
-        else:
-            st.error("Invalid Sequence! Please use only A, T, G, C.")
+    st.header("🔬 DNA Analysis Tool")
+    seq = st.text_area("Paste DNA sequence:", "ATGC").upper()
+    if st.button("Analyze"):
+        st.metric("GC Content", f"{(seq.count('G') + seq.count('C')) / len(seq) * 100:.2f}%")
 
-# --- TAB 4: AI HINGLISH HELPER ---
+# =========================
+# TAB 4: SEARCH
+# =========================
 with tabs[3]:
-    st.header("🇮🇳 Custom AI Translator")
-    st.write("Paste any English text from your notes to get a Hinglish explanation.")
-    user_text = st.text_area("Paste English Text here:", height=200)
-    if st.button("Translate with AI"):
-        if user_text.strip():
-            with st.spinner("Processing..."):
-                st.markdown("---")
-                st.write(ask_gemini_hinglish(user_text))
-        else:
-            st.warning("Please paste some text first.")
+    st.header("🔍 Smart Search")
+    query = st.text_input("Search term").lower()
+    for i, r in knowledge_df.iterrows():
+        if query and query in str(r.get("Topic", "")).lower():
+            with st.expander(r["Topic"]):
+                st.write(r["Explanation"])
+                if st.button("Go", key=i):
+                    st.session_state.page_index = i
+                    st.rerun()
 
-# --- TAB 5: DATA MANAGEMENT ---
+# =========================
+# TAB 5: DATA
+# =========================
 with tabs[4]:
-    st.header("📊 Database Management")
-    st.write("Detected Columns:", list(knowledge_df.columns))
-    
-    uploaded_file = st.file_uploader("Upload New knowledge_base.csv", type="csv")
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        df.to_csv("knowledge_base.csv", index=False)
-        st.success("File uploaded successfully! Please refresh the page to see changes.")
-    
-    st.divider()
-    st.subheader("Current Data Preview")
-    st.dataframe(knowledge_df)
+    file = st.file_uploader("Upload CSV", type="csv")
+    if file:
+        st.dataframe(pd.read_csv(file))
+
+# =========================
+# TAB 6: HINGLISH HELPER (GEMINI ONLY HERE)
+# =========================
+with tabs[5]:
+    st.header("🇮🇳 Hindi & Hinglish Helper")
+
+    text = st.text_area("Paste English text here:", height=150)
+    use_ai = st.checkbox("🤖 Use Gemini AI for Hinglish explanation", value=False)
+
+    if st.button("Translate & Explain"):
+        hindi = GoogleTranslator(source="auto", target="hi").translate(text)
+        topic = detect_topic(text)
+
+        if use_ai:
+            hinglish = gemini_hinglish(text, topic)
+            st.caption("🤖 AI-assisted explanation (Gemini)")
+        else:
+            hinglish = rule_based_hinglish(topic)
+            st.caption("📘 Rule-based explanation")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.subheader("📝 Pure Hindi")
+            st.info(hindi)
+        with c2:
+            st.subheader("🗣 Smart Hinglish")
+            st.code(hinglish, language="text")
