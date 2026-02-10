@@ -32,22 +32,20 @@ def get_text_from_image(img_path):
     return ""
 
 # =========================
-# LOAD KNOWLEDGE BASE
+# LOAD KNOWLEDGE BASE (Updated)
 # =========================
 @st.cache_data
 def load_knowledge_base():
     for file in ["knowledge.csv", "knowledge_base.csv"]:
         if os.path.exists(file):
             df = pd.read_csv(file)
+            # Remove any completely empty rows
+            df = df.dropna(how='all')
             df.columns = df.columns.str.strip()
             return df
     return None
 
-knowledge_df = load_knowledge_base()
-
-if knowledge_df is None:
-    st.error("❌ Knowledge base CSV not found.")
-    st.stop()
+# ... (keep other parts of code) ...
 
 # =========================
 # SESSION STATE
@@ -113,22 +111,24 @@ with tabs[0]:
 with tabs[1]:
     st.header("🧠 10 Key Exam Points")
     
-    # Try both common column naming conventions
-    points = row.get("Ten_Points") if row.get("Ten_Points") else row.get("Ten Points", "")
+    # 1. Get the data
+    points_data = row.get("Ten_Points", "")
     
-    if isinstance(points, str) and points.strip():
-        # This handles both comma-separated and newline-separated points
-        separator = "\n" if "\n" in points else ","
-        points_list = points.split(separator)
-        
-        for p in points_list:
-            if p.strip():
-                st.write(f"• {p.strip()}")
+    # 2. Check if it's actually a string and not "NaN" (empty)
+    if pd.isna(points_data) or str(points_data).strip() == "":
+        st.info("10-point summary not available for this specific row.")
+        st.write("Debug: Check if your CSV Row has data in the Ten_Points column.")
     else:
-        st.info("10-point summary not available.")
-        # Debug helper: shows what columns actually exist
-        with st.expander("Debug: Available Columns"):
-            st.write(list(knowledge_df.columns))
+        # 3. Clean and split the points
+        # This handles newlines (\n) which occur when you press Alt+Enter in Excel
+        lines = str(points_data).split('\n')
+        for line in lines:
+            if line.strip():
+                st.write(f"• {line.strip()}")
+
+    if st.button("🔄 Force Refresh CSV"):
+        st.cache_data.clear()
+        st.rerun()
 
 # =========================
 # TAB 3: DNA LAB
