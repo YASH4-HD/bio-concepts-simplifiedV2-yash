@@ -157,49 +157,58 @@ with tabs[3]:
         if not found: st.warning("No matches found.")
 
 # =========================
-# TAB 5: GLOBAL BIO-SEARCH (FIXED WIKI)
+# TAB 5: GLOBAL BIO-SEARCH (SMART WIKIPEDIA + GOOGLE FALLBACK)
 # =========================
-import wikipedia 
-
 with tabs[4]:
     st.header("🌐 Global Bio-Intelligence")
-    st.caption("Search Wikipedia and NCBI")
+    st.caption("Smart Wikipedia Search + NCBI Integration")
     
     st.subheader("📚 Quick Wikipedia Summary")
-    wiki_query = st.text_input("Enter a topic (e.g., CRISPR, DNA, Mitosis):")
+    user_input = st.text_input("Enter any topic (e.g., MITOSIS, CRISPR, DNA):")
     
-    if wiki_query:
-        with st.spinner("Searching Wikipedia..."):
+    if user_input:
+        # Step 1: Normalize Input
+        clean_query = user_input.strip().title()
+        
+        with st.spinner(f"Searching Wikipedia for '{clean_query}'..."):
             try:
-                # Strategy 1: Try exact search
-                summary = wikipedia.summary(wiki_query, sentences=3)
-                st.info(summary)
-                st.markdown(f"🔗 [Read full Wikipedia article]({wikipedia.page(wiki_query).url})")
-            
-            except wikipedia.exceptions.DisambiguationError as e:
-                # Strategy 2: If vague (like CRISPR/Crisps), look for a biology-related suggestion
-                refined_query = ""
-                for option in e.options:
-                    if any(word in option.lower() for word in ["gene", "biology", "protein", "cas9", "science"]):
-                        refined_query = option
-                        break
+                # Step 2: Search first to get the correct title
+                search_results = wikipedia.search(user_input)
                 
-                if refined_query:
-                    summary = wikipedia.summary(refined_query, sentences=3)
-                    st.success(f"Showing results for: **{refined_query}**")
-                    st.info(summary)
-                    st.markdown(f"🔗 [Read full article]({wikipedia.page(refined_query).url})")
+                if not search_results:
+                    st.error("❌ No Wikipedia results found.")
+                    st.markdown(f"🔍 [Try searching Google for '{user_input}'](https://www.google.com/search?q={user_input}+biology)")
                 else:
-                    st.warning(f"Multiple meanings found. Did you mean: {', '.join(e.options[:3])}?")
-            
-            except Exception:
-                st.error("Topic not found. Please try a more specific term.")
+                    # Step 3: Fetch summary for the best match
+                    best_match = search_results[0]
+                    summary = wikipedia.summary(best_match, sentences=3)
+                    
+                    st.success(f"Found: **{best_match}**")
+                    st.info(summary)
+                    
+                    # Step 4: Links & Pro-Tip
+                    col_l, col_r = st.columns(2)
+                    with col_l:
+                        st.markdown(f"🔗 [Read full Wikipedia article]({wikipedia.page(best_match).url})")
+                    with col_r:
+                        # PRO TIP: Google Search Fallback
+                        st.markdown(f"🔍 [Search Google for '{best_match}'](https://www.google.com/search?q={best_match}+biology)")
+
+            except wikipedia.exceptions.DisambiguationError as e:
+                # Auto-fallback to the first suggested option
+                first_option = e.options[0]
+                summary = wikipedia.summary(first_option, sentences=3)
+                st.warning(f"Note: Multiple meanings. Showing result for: {first_option}")
+                st.info(summary)
+            except Exception as e:
+                st.error("Could not fetch information.")
+                st.markdown(f"🔍 [Search Google for '{user_input}'](https://www.google.com/search?q={user_input}+biology)")
 
     st.divider()
 
-    # 2. NCBI Section
+    # NCBI Section
     st.subheader("🔬 Technical Research (NCBI)")
-    s_type = st.selectbox("Database", ["pubmed", "gene", "protein"])
+    s_type = st.selectbox("Select Database", ["pubmed", "gene", "protein"])
     s_query = st.text_input(f"Enter {s_type} keyword for technical data:")
     
     if st.button("Search NCBI"):
