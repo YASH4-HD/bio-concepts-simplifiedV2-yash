@@ -2,9 +2,19 @@ import streamlit as st
 import pandas as pd
 import os
 from deep_translator import GoogleTranslator
+import easyocr
+import cv2
+import numpy as np
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Bio-Tech Smart Textbook", layout="wide")
+
+# --- INITIALIZE OCR (Cache it so it only loads once) ---
+@st.cache_resource
+def load_ocr():
+    return easyocr.Reader(['en'])
+
+reader = load_ocr()
 
 # --- DATA LOADING ---
 @st.cache_data
@@ -17,34 +27,18 @@ def load_knowledge_base():
                 df = pd.read_csv(full_path, encoding='utf-8')
                 df.columns = df.columns.str.strip()
                 return df
-            except:
-                continue
+            except: continue
     return None
 
 knowledge_df = load_knowledge_base()
 
-# --- INITIALIZE SESSION STATES ---
+# --- SESSION STATE ---
 if 'page_index' not in st.session_state:
     st.session_state.page_index = 0
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 0  # 0 is the Reader tab
-
-# Function to handle jumping
-def jump_to_page(index):
-    st.session_state.page_index = index
-    st.session_state.active_tab = 0  # Switch to Reader Tab
-    st.rerun()
 
 # --- APP LOGIC ---
 if knowledge_df is not None:
-    
-    # We use the 'value' parameter to programmatically change tabs
-    tab_list = ["📖 Reader", "🔬 DNA Lab", "🔍 Search", "📊 Data Analysis", "🇮🇳 Hinglish Helper"]
-    tabs = st.tabs(tab_list)
-    
-    # Logic to force the tab selection based on session state
-    # (Note: Streamlit tabs don't have a direct 'active' setter yet, 
-    # so we use a container trick or simply inform the user/rerun logic)
+    tabs = st.tabs(["📖 Reader", "🔬 DNA Lab", "🔍 Smart Search", "📊 Data", "🇮🇳 Hinglish"])
 
     # --- TAB 0: READER ---
     with tabs[0]:
@@ -54,7 +48,7 @@ if knowledge_df is not None:
                 st.session_state.page_index -= 1
                 st.rerun()
         with col_page:
-            st.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1}</h3>", unsafe_allow_html=True)
         if col_next.button("Next ➡️"):
             if st.session_state.page_index < len(knowledge_df) - 1:
                 st.session_state.page_index += 1
@@ -67,60 +61,61 @@ if knowledge_df is not None:
             st.header(current_page.get('Topic', 'Untitled'))
             st.write(current_page.get('Explanation', ''))
         with t2:
-            img = str(current_page.get('Image', ''))
-            if img and os.path.exists(img):
-                st.image(img, use_container_width=True)
-            else:
-                st.info("Diagram/Table will appear here")
+            img_path = str(current_page.get('Image', ''))
+            if img_path and os.path.exists(img_path):
+                st.image(img_path, use_container_width=True)
 
-    # --- TAB 1: DNA LAB ---
-    with tabs[1]:
-        st.header("🔬 DNA Analysis")
-        seq = st.text_area("Paste DNA Sequence:", "ATGC").upper().strip()
-        if st.button("Analyze Sequence"):
-            if seq:
-                gc = (seq.count('G') + seq.count('C')) / len(seq) * 100
-                st.metric("GC Content", f"{gc:.2f}%")
-
-    # --- TAB 2: SEARCH ENGINE ---
+    # --- TAB 2: SMART SEARCH (WITH IMAGE OCR) ---
     with tabs[2]:
-        st.header("🔍 Search Textbook")
-        query = st.text_input("Enter keyword (e.g. Enzyme):")
+        st.header("🔍 AI Search (Text + Images)")
+        query = st.text_input("Search for any word (even inside diagrams):")
+        
         if query:
-            # Search in both Topic and Explanation
-            results = knowledge_df[
-                knowledge_df['Topic'].str.contains(query, case=False, na=False) | 
-                knowledge_df['Explanation'].str.contains(query, case=False, na=False)
-            ]
-            
-            if not results.empty:
-                for i, row in results.iterrows():
-                    with st.expander(f"📖 {row['Topic']} (Page {i+1})"):
-                        st.write(row['Explanation'][:200] + "...") # Show preview
-                        # The fix: This button now triggers the jump
-                        if st.button(f"Read Full Page {i+1}", key=f"jump_{i}"):
-                            st.session_state.page_index = i
-                            st.success(f"Page {i+1} loaded! Click the 'Reader' tab to see it.")
-                            # Optional: st.rerun() 
-            else:
-                st.warning("No matches found.")
+            with st.spinner("AI is scanning text and images..."):
+                # 1. Search in CSV Text
+                text_matches = knowledge_df[
+                    knowledge_df['Topic'].str.contains(query, case=False, na=False) | 
+                    knowledge_df['Explanation'].str.contains(query, case=False, na=False)
+                ].index.tolist()
 
-    # --- TAB 3: DATA ANALYSIS ---
-    with tabs[3]:
-        st.header("📊 Lab Data")
-        up = st.file_uploader("Upload CSV", type="csv")
-        if up:
-            st.dataframe(pd.read_csv(up))
+                # 2. Search in Images using OCR
+                image_matches = []
+                # To save time, we only scan images mentioned in the CSV
+                for idx, row in knowledge_df.iterrows():
+                    img_file = str(row.get('Image', ''))
+                    if img_file and os.path.exists(img_file):
+                        # Perform OCR on the image
+                        results = reader.readtext(img_file, detail=0)
+                        # Check if query exists in the list of words found in image
+                        if any(query.lower() in word.lower() for word in results):
+                            if idx not in text_matches:
+                                image_matches.append(idx)
 
-    # --- TAB 4: HINGLISH HELPER ---
+                # Combine results
+                all_indices = list(set(text_matches + image_matches))
+
+                if all_indices:
+                    st.success(f"Found {len(all_indices)} matches!")
+                    for i in all_indices:
+                        row = knowledge_df.iloc[i]
+                        with st.expander(f"📖 {row['Topic']} (Page {i+1})"):
+                            if i in image_matches:
+                                st.info("📍 Found this word inside the diagram/image on this page!")
+                            st.write(row['Explanation'][:200] + "...")
+                            if st.button(f"Go to Page {i+1}", key=f"search_{i}"):
+                                st.session_state.page_index = i
+                                st.rerun()
+                else:
+                    st.warning("No matches found in text or diagrams.")
+
+    # --- TAB 4: HINGLISH ---
     with tabs[4]:
-        st.header("🇮🇳 Hinglish Concept Explainer")
-        to_translate = st.text_area("Paste English sentence here:")
-        if st.button("Translate to Hindi/Hinglish"):
+        st.header("🇮🇳 Hinglish Helper")
+        to_translate = st.text_area("Paste complex bio-sentence:")
+        if st.button("Translate"):
             if to_translate:
-                with st.spinner("Translating..."):
-                    translated = GoogleTranslator(source='auto', target='hi').translate(to_translate)
-                    st.success(translated)
+                res = GoogleTranslator(source='auto', target='hi').translate(to_translate)
+                st.success(res)
 
 else:
-    st.error("CSV File not found. Please ensure 'knowledge.csv' is in your GitHub folder.")
+    st.error("CSV File not found.")
