@@ -109,39 +109,53 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-                                                                                                # 1. TOP PROGRESS BAR
-        progress_value = (st.session_state.page_index + 1) / len(knowledge_df)
-        st.progress(progress_value)
+                                                                                                      # --- TARGETED BLUE STYLE (SAFE) ---
+        st.markdown("""
+            <style>
+                /* Only color buttons that contain these specific arrows */
+                button:contains("⬅"), button:contains("➡") {
+                    background-color: #1e468a !important;
+                    color: white !important;
+                    border: none !important;
+                    font-weight: bold !important;
+                    height: 42px !important;
+                }
+                /* Ensure the grey box matches the button height exactly */
+                .page-box-final {
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    padding: 2px;
+                    text-align: center;
+                    background-color: #f9f9f9;
+                    height: 42px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
-        # 2. SIMPLE TOOLBAR (Using standard columns, no complex CSS)
-        # The [0.5, 0.8, 0.5, 4] ratio keeps everything small and to the left
-        c1, c2, c3, c4 = st.columns([0.6, 0.8, 0.6, 4])
+        # 1. PROGRESS BAR
+        st.progress((st.session_state.page_index + 1) / len(knowledge_df))
+
+        # 2. NAVIGATION
+        c1, c2, c3, c4 = st.columns([0.8, 1.0, 0.8, 4], gap="small")
         
         with c1:
-            # Standard button - works every time
-            if st.button("⬅ PREV", use_container_width=True, disabled=st.session_state.page_index == 0):
-                st.session_state.page_index = max(0, st.session_state.page_index - 1)
+            if st.button("⬅ PREV", key="p1", use_container_width=True, disabled=st.session_state.page_index == 0):
+                st.session_state.page_index -= 1
                 st.rerun()
-        
         with c2:
-            # Use a simple st.info or st.code for a boxed look without complex CSS
-            current_pg = st.session_state.page_index + 1
-            total_pg = len(knowledge_df)
             st.markdown(f"""
-                <div style="border: 1px solid #ddd; border-radius: 5px; padding: 2px; text-align: center; background-color: #f9f9f9; line-height: 1.2;">
-                    <p style="margin: 0; font-size: 0.7rem; color: gray;">PAGE</p>
-                    <p style="margin: 0; font-weight: bold; font-size: 1rem;">{current_pg} / {total_pg}</p>
+                <div class="page-box-final">
+                    <p style="margin:0; font-size:0.6rem; color:gray; text-transform:uppercase;">PAGE</p>
+                    <p style="margin:0; font-weight:bold; font-size:1rem; color:#1e468a;">{st.session_state.page_index + 1} / {len(knowledge_df)}</p>
                 </div>
             """, unsafe_allow_html=True)
-        
         with c3:
-            if st.button("NEXT ➡", use_container_width=True, disabled=st.session_state.page_index == len(knowledge_df) - 1):
-                st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
+            if st.button("NEXT ➡", key="n1", use_container_width=True, disabled=st.session_state.page_index == len(knowledge_df)-1):
+                st.session_state.page_index += 1
                 st.rerun()
-
-        st.divider()
-
-
 
 
 
