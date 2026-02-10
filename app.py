@@ -82,7 +82,7 @@ if "page_index" not in st.session_state:
 # TABS
 # =========================
 tabs = st.tabs([
-# --- HERO HEADER (Image 2 Style) ---
+# --- HERO HEADER ---
 st.markdown("""
     <div style="text-align: left; padding: 10px 0px;">
         <h1 style="margin-bottom: 0;">🧬 Bio-Tech Smart Textbook</h1>
