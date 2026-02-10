@@ -112,40 +112,39 @@ with tabs[0]:
                 st.info("No diagram available.")
 
 # =========================
-# TAB 2: 10 POINTS (FIXED DOWNLOAD BUTTON)
+# TAB 2: 10 POINTS (FIXED DATA READING)
 # =========================
 with tabs[1]:
     st.header("🧠 10 Key Exam Points")
     
-    # Check if a topic is selected (from your CSV selection)
-    if 'row' in locals() or 'row' in globals():
-        pts = row.get('10_Points', '')
-        if pts:
-            # Display the points
-            st.write(pts)
-            
-            # --- DOWNLOAD AND CITATION SECTION ---
-            st.divider()
-            col_cite, col_dl = st.columns(2)
-            
-            with col_cite:
-                if st.button("📋 Generate Citation"):
-                    citation = f"Source: Bio-Verify 2026, Topic: {row.get('Topic')}, Date: {datetime.date.today()}"
-                    st.code(citation, language="text")
-            
-            with col_dl:
-                # This creates the download button for the 10 points
-                st.download_button(
-                    label="📥 Download Study Notes",
-                    data=pts,
-                    file_name=f"{row.get('Topic', 'Bio_Notes')}.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-        else:
-            st.warning("Please select a topic in the 'Reader' tab first to see points.")
+    # Check if a topic was saved in Session State
+    if 'selected_row' in st.session_state:
+        row = st.session_state['selected_row']
+        pts = row.get('10_Points', 'No points available for this topic.')
+        
+        # Display the points
+        st.info(f"Summary for: **{row['Topic']}**")
+        st.write(pts)
+        
+        # --- DOWNLOAD AND CITATION SECTION ---
+        st.divider()
+        col_cite, col_dl = st.columns(2)
+        
+        with col_cite:
+            if st.button("📋 Generate Citation"):
+                citation = f"Source: Bio-Verify 2026, Topic: {row['Topic']}, Date: {datetime.date.today()}"
+                st.code(citation, language="text")
+        
+        with col_dl:
+            st.download_button(
+                label="📥 Download Study Notes",
+                data=str(pts),
+                file_name=f"{row['Topic']}_Notes.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
     else:
-        st.warning("Please select a topic in the 'Reader' tab first.")
+        st.warning("⚠️ Please go to the 'Reader' tab and select a topic first!")
 # =========================
 # TAB 3: DNA LAB
 # =========================
