@@ -135,24 +135,45 @@ with tabs[2]:
             st.metric("GC Content", f"{gc:.2f}%")
 
 # =========================
-# TAB 4: SEARCH
+# TAB 4: SEARCH (TEXT + IMAGE OCR)
 # =========================
 with tabs[3]:
-    st.header("🔍 Smart Search")
-    query = st.text_input("Search term").lower()
+    st.header("🔍 Smart Search (Text + Diagrams)")
+    query = st.text_input("Search term").lower().strip()
 
     if query:
-        found = False
+        found_any = False
+
         for i, r in knowledge_df.iterrows():
-            if query in str(r.get("Topic", "")).lower() or query in str(r.get("Explanation", "")).lower():
-                found = True
-                with st.expander(f"{r['Topic']} (Page {i+1})"):
-                    st.write(r["Explanation"])
-                    if st.button(f"Go to Page {i+1}", key=f"go_{i}"):
+            topic = str(r.get("Topic", "")).lower()
+            expl = str(r.get("Explanation", "")).lower()
+            img = str(r.get("Image", ""))
+
+            found_in = []
+
+            # 1️⃣ Text search
+            if query in topic or query in expl:
+                found_in.append("Text")
+
+            # 2️⃣ Image OCR search
+            ocr_text = get_text_from_image(img)
+            if query in ocr_text:
+                found_in.append("Diagram")
+
+            if found_in:
+                found_any = True
+                with st.expander(f"📖 {r['Topic']} (Page {i+1})"):
+                    st.write(r.get("Explanation", ""))
+
+                    if "Diagram" in found_in:
+                        st.info("📸 Term found inside diagram/table")
+
+                    if st.button(f"Go to Page {i+1}", key=f"jump_{i}"):
                         st.session_state.page_index = i
                         st.rerun()
-        if not found:
-            st.warning("No results found.")
+
+        if not found_any:
+            st.warning("No matches found in text or diagrams.")
 
 # =========================
 # TAB 5: DATA MANAGEMENT
