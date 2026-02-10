@@ -17,22 +17,49 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- SIDEBAR ---
+# =========================
+# SIDEBAR: BIO-VERIFY PANEL
+# =========================
 with st.sidebar:
+
+    # Title
     st.title("🛡️ Bio-Verify 2026")
-    
-    # This is the fix:
+
+    # --- INDIA TIME (IST) ---
     ist = pytz.timezone("Asia/Kolkata")
-    today_auto = datetime.datetime.now(ist).strftime("%d %b %Y")
-EXAMS = {
-    "CSIR NET": datetime.date(2026, 6, 21),
-    "GATE BT": datetime.date(2026, 2, 7)
-}
-    st.sidebar.title(f"📅 {today_auto.upper()}")
-    
+    today_dt = datetime.datetime.now(ist)
+    today_date = today_dt.date()
+
+    # Display current date
+    today_auto = today_dt.strftime("%d %b %Y")
+    st.subheader(f"📅 {today_auto.upper()}")
+
     st.divider()
+
+    # --- EXAM DATES ---
+    EXAMS = {
+        "CSIR NET": datetime.date(2026, 6, 21),
+        "GATE BT": datetime.date(2026, 2, 7),
+    }
+
+    st.subheader("📆 Exam Countdown")
+
+    for exam, exam_date in EXAMS.items():
+        days_left = (exam_date - today_date).days
+
+        if days_left > 0:
+            st.info(f"**{exam}**: {days_left} days left")
+        elif days_left == 0:
+            st.warning(f"**{exam}**: Exam Today!")
+        else:
+            st.error(f"**{exam}**: Exam completed")
+
+    st.divider()
+
+    # --- STATUS BADGES ---
     st.success("✅ Live API Connection: Active")
     st.info("Verified Data Sources: NCBI, Wikipedia, Google")
+
     st.divider()
  # --- PROFILE CARD (Image 3 Style) ---
     st.markdown("""
