@@ -15,58 +15,52 @@ st.set_page_config(
 )
 
 # =========================
-# API SETUP (GEMINI)
+# API SETUP (SECURE)
 # =========================
-# Get your key from https://aistudio.google.com/
-GEMINI_API_KEY = "AIzaSyCmYzYISM5CpuAsiJ4eEZ3pBBL9XmYXGB8" 
-
-if GEMINI_API_KEY != "AIzaSyCmYzYISM5CpuAsiJ4eEZ3pBBL9XmYXGB8":
-    genai.configure(api_key=GEMINI_API_KEY)
+# This will look for GEMINI_API_KEY in your Streamlit Secrets or environment
+if "GEMINI_API_KEY" in st.secrets:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel('gemini-1.5-flash')
 else:
-    st.error("⚠️ Please insert your Gemini API Key in the code.")
+    st.error("🔑 API Key not found! Please add 'GEMINI_API_KEY' to Streamlit Secrets.")
+    st.stop() # Stops the app if no key is found
 
 # =========================
-# OCR & DATA LOADING
+# DATA LOADING (FIXED FOR KEYERRORS)
 # =========================
-@st.cache_resource
-def load_ocr():
-    return easyocr.Reader(['en'])
-
-reader = load_ocr()
-
 @st.cache_data
 def load_knowledge_base():
-    # Try to load existing database
-    for file in ["knowledge_base.csv", "knowledge.csv"]:
-        if os.path.exists(file):
-            df = pd.read_csv(file)
-            df.columns = df.columns.str.strip()
-            return df
-    # Fallback Data
+    file_path = "knowledge_base.csv"
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+        df.columns = df.columns.str.strip() # Remove hidden spaces
+        return df
+    
     return pd.DataFrame({
-        "Topic": ["DNA Replication", "PCR Technique"], 
-        "Explanation": ["DNA replication is the process by which a double-stranded DNA molecule is copied to produce two identical DNA molecules.", "Polymerase Chain Reaction is a method used to make millions of copies of a specific DNA sample."], 
-        "Ten_Points": ["Occurs in S-phase\nSemi-conservative\nRequires DNA Polymerase", "Denaturation at 94C\nAnnealing at 55C\nExtension at 72C"],
-        "Image": ["", ""]
+        "Topic": ["Welcome"], 
+        "Explanation": ["Please upload a CSV file in the Data Management tab."], 
+        "Ten_Points": ["No data found."],
+        "Image": [""]
     })
 
 knowledge_df = load_knowledge_base()
+
+def get_col_data(row, possible_names, default="Not Available"):
+    for name in possible_names:
+        if name in row:
+            return str(row[name])
+    return default
 
 # =========================
 # AI LOGIC
 # =========================
 def ask_gemini_hinglish(text):
     prompt = f"""
-    You are an expert Bio-Technology Teacher. 
-    Explain the following technical text in 'Hinglish' (Natural mix of Hindi and English) for an Indian college student.
-    
-    CRITICAL RULES:
-    1. Keep all technical terms (DNA, PCR, Enzymes, Primers, etc.) in English.
-    2. Use Roman script (English letters) for Hindi words (e.g., write 'kaise hota hai' instead of 'कैसे होता है').
-    3. Make it sound like a friendly 'Chat' style explanation.
-    4. Provide 3 short 'Exam Tips' in Hinglish at the end.
-
+    Explain this Bio-Tech text in 'Hinglish' (Hindi + English mix in Roman script).
+    - Keep technical terms (DNA, PCR, CRISPR, etc) in English.
+    - Use a friendly, conversational tone (Chat style).
+    - Write the Hindi parts in English letters (Roman script).
     Text: {text}
     """
     try:
@@ -85,9 +79,11 @@ if "page_index" not in st.session_state:
 # MAIN UI
 # =========================
 st.title("🧬 Bio-Tech Smart AI Textbook")
-st.markdown("---")
 
 tabs = st.tabs(["📖 AI Reader", "🧠 10 Points", "🔬 DNA Lab", "🇮🇳 AI Hinglish Helper", "📊 Data Management"])
+
+# Current Row Data
+row = knowledge_df.iloc[st.session_state.page_index]
 
 # 1. AI READER
 with tabs[0]:
@@ -95,71 +91,78 @@ with tabs[0]:
     with col1:
         if st.button("⬅ Previous"):
             st.session_state.page_index = max(0, st.session_state.page_index - 1)
+            st.rerun()
     with col2:
         st.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>", unsafe_allow_html=True)
     with col3:
         if st.button("Next ➡"):
             st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
+            st.rerun()
     
-    row = knowledge_df.iloc[st.session_state.page_index]
+    st.divider()
     
     left, right = st.columns([1, 1])
     with left:
-        st.header(row['Topic'])
-        st.write(row['Explanation'])
-        if st.button("✨ Explain in Hinglish"):
-            with st.spinner("Gemini is drafting your notes..."):
-                explanation = ask_gemini_hinglish(row['Explanation'])
-                st.info(explanation)
+        topic = get_col_data(row, ["Topic", "topic", "Title"])
+        expl = get_col_data(row, ["Explanation", "explanation", "Content", "Description"])
+        
+        st.header(topic)
+        st.write(expl)
+        
+        if st.button("✨ AI Hinglish Explanation"):
+            with st.spinner("Gemini is thinking..."):
+                st.info(ask_gemini_hinglish(expl))
 
     with right:
-        img_path = str(row.get('Image', ""))
+        img_path = get_col_data(row, ["Image", "image", "Picture"], "")
         if img_path and os.path.exists(img_path):
-            st.image(img_path, caption=row['Topic'], use_container_width=True)
+            st.image(img_path, use_container_width=True)
         else:
-            st.warning("No diagram found for this topic.")
+            st.info("No diagram found for this topic.")
 
 # 2. 10 POINTS
 with tabs[1]:
-    st.header(f"Revison Points: {row['Topic']}")
-    points = str(row['Ten_Points']).split('\n')
-    for p in points:
-        if p.strip():
-            st.success(f"🔹 {p}")
+    topic = get_col_data(row, ["Topic", "topic"])
+    st.header(f"Key Points: {topic}")
+    
+    points_text = get_col_data(row, ["Ten_Points", "Points", "ten_points", "Key Points"])
+    
+    if points_text != "Not Available":
+        points_list = points_text.split('\n')
+        for p in points_list:
+            if p.strip():
+                st.success(f"🔹 {p.strip()}")
+    else:
+        st.warning("No revision points column found in CSV.")
 
 # 3. DNA LAB
 with tabs[2]:
-    st.header("🔬 Sequence Tools")
-    dna_input = st.text_area("Paste DNA Sequence:", "ATGCATGCATGC").upper()
-    if st.button("Analyze Sequence"):
-        gc_content = (dna_input.count('G') + dna_input.count('C')) / len(dna_input) * 100
-        st.metric("GC Content", f"{gc_content:.2f}%")
-        st.write(f"**Complimentary Strand:** {dna_input.replace('A','t').replace('T','a').replace('G','c').replace('C','g').upper()}")
+    st.header("🔬 DNA Analyzer")
+    dna = st.text_input("Enter Sequence:", "ATGCATGC").upper()
+    if dna:
+        gc = (dna.count('G') + dna.count('C')) / len(dna) * 100
+        st.metric("GC Content", f"{gc:.2f}%")
 
-# 4. AI HINGLISH HELPER (CUSTOM INPUT)
+# 4. AI HINGLISH HELPER
 with tabs[3]:
-    st.header("🇮🇳 Custom AI Hinglish Translator")
-    st.write("Paste text from any source (PDF/Web) to get an instant Hinglish breakdown.")
-    
-    user_text = st.text_area("Enter English Text:", height=200, placeholder="Example: CRISPR-Cas9 is a unique technology that enables geneticists to edit parts of the genome...")
-    
-    if st.button("Convert with Gemini"):
+    st.header("🇮🇳 Custom AI Translator")
+    st.write("Paste any English text to get a Hinglish explanation.")
+    user_text = st.text_area("Paste English Text here:", height=200)
+    if st.button("Translate with AI"):
         if user_text:
-            with st.spinner("AI is processing..."):
-                result = ask_gemini_hinglish(user_text)
-                st.markdown("### 📝 AI Notes")
-                st.write(result)
+            st.write(ask_gemini_hinglish(user_text))
         else:
-            st.warning("Please enter text.")
+            st.warning("Please paste text first.")
 
 # 5. DATA MANAGEMENT
 with tabs[4]:
-    st.header("📊 Database Settings")
-    st.dataframe(knowledge_df)
+    st.header("📊 Database Management")
+    st.write("Columns detected:", list(knowledge_df.columns))
     
-    uploaded_file = st.file_uploader("Update Database (CSV)", type="csv")
+    uploaded_file = st.file_uploader("Upload CSV", type="csv")
     if uploaded_file:
-        new_df = pd.read_csv(uploaded_file)
-        if st.button("Confirm & Save"):
-            new_df.to_csv("knowledge_base.csv", index=False)
-            st.success("Database Updated!")
+        df = pd.read_csv(uploaded_file)
+        df.to_csv("knowledge_base.csv", index=False)
+        st.success("File uploaded! Please refresh the page.")
+    
+    st.dataframe(knowledge_df)
