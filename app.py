@@ -238,12 +238,13 @@ with tabs[4]:
 
     st.divider()
 
-    # NCBI Section
+# NCBI Section
     st.subheader("🔬 Technical Research (NCBI)")
     s_type = st.selectbox("Select Database", ["pubmed", "gene", "protein"])
     s_query = st.text_input(f"Enter {s_type} keyword for technical data:")
     
-        if st.button("Search NCBI"):
+    # Line 246 starts here - NO EXTRA INDENT
+    if st.button("Search NCBI"):
         if s_query:
             with st.spinner("Searching NCBI..."):
                 try:
