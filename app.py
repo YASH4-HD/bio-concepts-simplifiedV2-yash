@@ -109,63 +109,53 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-                                                               # --- FLEXBOX NAVIGATION (NO COLUMNS) ---
-        st.markdown(f"""
+                                                                      # --- CLEAN LEFT-ALIGNED NAVIGATION ---
+        st.markdown("""
             <style>
-                .nav-container {{
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    margin-bottom: 20px;
-                }}
-                .page-box {{
-                    background-color: #f0f2f6;
-                    border: 1px solid #d1d5db;
-                    border-radius: 8px;
-                    padding: 4px 15px;
-                    text-align: center;
-                    min-width: 100px;
-                    height: 42px;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                }}
-                /* Target only these specific buttons to avoid messing up other tabs */
-                .nav-container button {{
+                /* Style only the buttons in this specific tab */
+                div.stButton > button {
                     background-color: #1e468a !important;
                     color: white !important;
                     border-radius: 8px !important;
-                    height: 42px !important;
-                    padding: 0 15px !important;
+                    height: 45px !important;
                     border: none !important;
-                    font-size: 0.85rem !important;
                     font-weight: bold !important;
-                    width: auto !important;
-                }}
+                    width: 100% !important;
+                }
+                /* Style the Page indicator box */
+                .page-indicator {
+                    text-align: center;
+                    background: #f0f2f6;
+                    border-radius: 8px;
+                    padding: 5px;
+                    height: 45px;
+                    border: 1px solid #d1d5db;
+                }
             </style>
-            <div class="nav-container">
-                <div id="prev-placeholder"></div>
-                <div class="page-box">
-                    <span style="font-size: 0.6rem; color: #555; text-transform: uppercase; line-height: 1;">Page</span>
-                    <span style="font-size: 1rem; color: #1e468a; font-weight: bold;">{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
-                </div>
-                <div id="next-placeholder"></div>
-            </div>
         """, unsafe_allow_html=True)
 
-        # Use 5 columns but only use the first 3 for the actual buttons
-        # This keeps them small and to the left
-        c1, c2, c3, _ = st.columns([1, 1.5, 1, 5], gap="small")
+        # 1. TOP PROGRESS BAR
+        progress_value = (st.session_state.page_index + 1) / len(knowledge_df)
+        st.progress(progress_value)
+
+        # 2. THE NAVIGATION ROW
+        # [1, 1.2, 1, 5] keeps the first three items tight to the left
+        col1, col2, col3, col4 = st.columns([1, 1.2, 1, 5])
         
-        with c1:
+        with col1:
             if st.button("⬅ PREV"):
                 st.session_state.page_index = max(0, st.session_state.page_index - 1)
                 st.rerun()
-        with c2:
-            # This is an empty placeholder to keep the alignment 
-            # while the HTML Page box sits behind it.
-            st.write("") 
-        with c3:
+        
+        with col2:
+            st.markdown(f"""
+                <div class="page-indicator">
+                    <small style='color:#555; font-size:0.6rem; text-transform: uppercase; display:block; line-height:1;'>PAGE</small>
+                    <span style='font-weight:bold; font-size:1rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
             if st.button("NEXT ➡"):
                 st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
                 st.rerun()
