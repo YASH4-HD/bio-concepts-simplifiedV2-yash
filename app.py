@@ -5,116 +5,124 @@ import os
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Bio-Tech Smart Textbook", layout="wide")
 
-# --- CUSTOM CSS FOR BETTER READING ---
+# --- CUSTOM STYLING ---
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 20px; height: 3em; background-color: #007bff; color: white; }
-    .stMarkdown { font-size: 1.1rem; line-height: 1.6; }
-    .page-box { padding: 20px; background: white; border-radius: 15px; border: 1px solid #ddd; }
+    .main { background-color: #f8f9fa; }
+    .stButton>button { border-radius: 10px; height: 3em; font-weight: bold; }
+    .page-info { text-align: center; font-size: 1.2rem; font-weight: bold; color: #007bff; }
+    .content-box { 
+        padding: 25px; 
+        background: white; 
+        border-radius: 15px; 
+        border: 1px solid #e0e0e0;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- DATA LOADING ---
+# --- DATA LOADING LOGIC ---
 @st.cache_data
-def load_data():
-    # Replace 'knowledge_base.csv' with your actual file path
-    if os.path.exists('knowledge_base.csv'):
-        return pd.read_csv('knowledge_base.csv')
-    else:
-        # Dummy data for demonstration
-        return pd.DataFrame({
-            'Section': ['1.1', '1.2', '2.1'],
-            'Topic': ['Structure of DNA', 'PCR Basics', 'Gel Electrophoresis'],
-            'Explanation': [
-                'DNA is a double helix made of nucleotides...',
-                'Polymerase Chain Reaction (PCR) is used to amplify DNA...',
-                'Gel electrophoresis separates DNA fragments by size...'
-            ],
-            'Image': ['dna.jpg', 'pcr.jpg', 'gel.jpg'] # Ensure these exist or use placeholders
-        })
+def load_knowledge_base():
+    file_name = 'knowledge_base.csv'
+    if os.path.exists(file_name):
+        try:
+            df = pd.read_csv(file_name)
+            # Clean column names (removes hidden spaces)
+            df.columns = df.columns.str.strip()
+            return df
+        except Exception as e:
+            st.error(f"Error reading CSV: {e}")
+            return None
+    return None
 
-knowledge_df = load_data()
+# Load the data
+knowledge_df = load_knowledge_base()
 
-# --- INITIALIZE SESSION STATE FOR PAGE NAVIGATION ---
-if 'page_index' not in st.session_state:
-    st.session_state.page_index = 0
+# --- APP LOGIC ---
+if knowledge_df is not None:
+    # Initialize Page Index in Session State
+    if 'page_index' not in st.session_state:
+        st.session_state.page_index = 0
 
-# --- APP LAYOUT ---
-st.title("🧬 Wilson & Walker: Interactive Lab Guide")
+    # Tabs for the PhD App
+    tab0, tab1, tab2, tab3 = st.tabs(["📖 Interactive Reader", "🔬 DNA Lab Tools", "🤖 AI Assistant", "📊 Data Analysis"])
 
-tab0, tab1, tab2, tab3 = st.tabs(["📖 Interactive Reader", "🔬 DNA Lab Tools", "🤖 AI Research Assistant", "📊 Data Analysis"])
-
-# --- TAB 0: THE INTERACTIVE READER (OPTION 1) ---
-with tab0:
-    st.subheader("Interactive Textbook Interface")
-    
-    # Navigation Row
-    col_prev, col_page, col_next = st.columns([1, 2, 1])
-    
-    if col_prev.button("⬅️ Previous Page"):
-        if st.session_state.page_index > 0:
-            st.session_state.page_index -= 1
-            st.rerun()
-
-    with col_page:
-        st.markdown(f"<h3 style='text-align: center;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</h3>", unsafe_allow_html=True)
-
-    if col_next.button("Next Page ➡️"):
-        if st.session_state.page_index < len(knowledge_df) - 1:
-            st.session_state.page_index += 1
-            st.rerun()
-
-    # Get current page data
-    current_page = knowledge_df.iloc[st.session_state.page_index]
-
-    # Content Display
-    st.markdown("---")
-    col_text, col_img = st.columns([3, 2])
-
-    with col_text:
-        st.markdown(f"## {current_page['Topic']}")
-        st.markdown(f"**Section:** {current_page['Section']}")
-        st.write(current_page['Explanation'])
+    # --- TAB 0: INTERACTIVE READER (OPTION 1) ---
+    with tab0:
+        st.title("Wilson & Walker: Smart Textbook")
         
-        # Action Button to link with Lab
-        if st.button("Apply this topic in DNA Lab 🔬"):
-            st.info(f"Context for '{current_page['Topic']}' sent to Lab Tools!")
+        # Reader Navigation Bar
+        col_prev, col_page, col_next = st.columns([1, 2, 1])
+        
+        if col_prev.button("⬅️ Previous Page"):
+            if st.session_state.page_index > 0:
+                st.session_state.page_index -= 1
+                st.rerun()
 
-    with col_img:
-        if pd.notna(current_page['Image']) and os.path.exists(str(current_page['Image'])):
-            st.image(current_page['Image'], caption=current_page['Topic'], use_container_width=True)
-        else:
-            # Placeholder for missing images
-            st.info("💡 Image/Diagram placeholder for " + current_page['Topic'])
+        with col_page:
+            st.markdown(f"<p class='page-info'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</p>", unsafe_allow_html=True)
 
-# --- TAB 1: DNA LAB TOOLS ---
-with tab1:
-    st.header("Sequence Analysis Tools")
-    seq = st.text_area("Enter DNA Sequence:", "ATGC...", height=150)
-    
-    c1, c2, c3 = st.columns(3)
-    if c1.button("Calculate GC Content"):
-        gc = (seq.count('G') + seq.count('C')) / len(seq) * 100
-        st.metric("GC Content", f"{gc:.2f}%")
-    
-    if c2.button("Find Reverse Complement"):
-        complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-        rev_comp = "".join(complement.get(base, base) for base in reversed(seq))
-        st.code(rev_comp)
+        if col_next.button("Next Page ➡️"):
+            if st.session_state.page_index < len(knowledge_df) - 1:
+                st.session_state.page_index += 1
+                st.rerun()
 
-# --- TAB 2: AI RESEARCH ASSISTANT ---
-with tab2:
-    st.header("Ask the Wilson & Walker AI")
-    user_query = st.text_input("Ask a question about the current section:")
-    if user_query:
-        st.write(f"**AI Response:** Based on Section {current_page['Section']}, the answer is...")
-        st.caption("Note: Integrate OpenAI/Anthropic API here for real responses.")
+        st.divider()
 
-# --- TAB 3: DATA ANALYSIS ---
-with tab3:
-    st.header("Experimental Data Upload")
-    uploaded_file = st.file_uploader("Upload Lab Results (CSV)", type="csv")
-    if uploaded_file:
-        data = pd.read_csv(uploaded_file)
-        st.line_chart(data)
+        # Display Content
+        current_page = knowledge_df.iloc[st.session_state.page_index]
+        
+        col_text, col_img = st.columns([3, 2])
+
+        with col_text:
+            st.markdown(f"### Section {current_page.get('Section', 'N/A')}")
+            st.header(current_page.get('Topic', 'Untitled Topic'))
+            
+            st.markdown("<div class='content-box'>", unsafe_allow_html=True)
+            st.write(current_page.get('Explanation', 'No explanation available.'))
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.info(f"💡 **PhD Tip:** Use the 'DNA Lab Tools' tab to experiment with sequences related to {current_page.get('Topic')}.")
+
+        with col_img:
+            img_path = str(current_page.get('Image', ''))
+            if img_path and os.path.exists(img_path):
+                st.image(img_path, caption=f"Figure: {current_page.get('Topic')}", use_container_width=True)
+            else:
+                st.warning("📸 Image placeholder: Add image path to CSV to display diagrams here.")
+
+    # --- TAB 1: DNA LAB TOOLS ---
+    with tab1:
+        st.header("🔬 DNA Sequence Analysis")
+        seq = st.text_area("Paste DNA Sequence here:", "ATGCATGCATGC", height=150)
+        if st.button("Analyze Sequence"):
+            gc_content = (seq.upper().count('G') + seq.upper().count('C')) / len(seq) * 100
+            st.success(f"GC Content of {current_page['Topic']}: {gc_content:.2f}%")
+
+    # --- TAB 2: AI ASSISTANT ---
+    with tab2:
+        st.header("🤖 Research Assistant")
+        st.write(f"Currently focused on: **{current_page['Topic']}**")
+        user_q = st.text_input("Ask a question about this section:")
+        if user_q:
+            st.write("Generating answer based on Wilson & Walker principles...")
+
+    # --- TAB 3: DATA ANALYSIS ---
+    with tab3:
+        st.header("📊 Experimental Data")
+        uploaded = st.file_uploader("Upload CSV Lab Results", type="csv")
+        if uploaded:
+            df_lab = pd.read_csv(uploaded)
+            st.line_chart(df_lab)
+
+else:
+    # --- ERROR STATE: If CSV is missing ---
+    st.error("⚠️ 'knowledge_base.csv' not found!")
+    st.info("Please ensure your CSV file is in the same folder as this script.")
+    st.markdown("""
+    **Your CSV should look like this:**
+    | Section | Topic | Explanation | Image |
+    | :--- | :--- | :--- | :--- |
+    | 1.1 | DNA Structure | Full text here... | dna.jpg |
+    """)
