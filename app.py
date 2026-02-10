@@ -540,12 +540,12 @@ with tabs[6]:
     'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
     'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W',
 } # Add more if needed
-    protein = ""
-        for i in range(0, len(raw_seq)-2, 3):
-            codon = raw_seq[i:i+3]
-            protein += codon_map.get(codon, '?')
-        # THIS LINE below must be indented 2 levels so it stays inside the expander
-        st.write(f"**Protein:** `{protein}`") 
+protein = ""
+for i in range(0, len(raw_seq)-2, 3):
+    codon = raw_seq[i:i+3]
+    protein += codon_map.get(codon, '?')
+# THIS LINE below must be indented 2 levels so it stays inside the expander
+st.write(f"**Protein:** `{protein}`") 
 
         # 5. Scientific Insight (From your 2nd image)
     if gc_content > 60:
