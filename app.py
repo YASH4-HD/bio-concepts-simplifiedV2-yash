@@ -92,12 +92,15 @@ st.markdown("""
         </p>
     </div>
 """, unsafe_allow_html=True)
+
+# --- TABS DEFINITION ---
+tabs = st.tabs([
     "📖 Reader",
     "🧠 10 Points",
     "🔬 DNA Lab",
     "🔍 Search",
     "🌐 Global Bio-Search",
-    "🇮🇳 Hindi Helper",
+    "🇮🇳 Hindi Helper"
 ])
 
 # =========================
