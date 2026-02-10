@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import easyocr
 from deep_translator import GoogleTranslator
+import requests
 
 # =========================
 # PAGE CONFIG
@@ -36,38 +37,24 @@ def get_text_from_image(img_path):
 # =========================
 @st.cache_data
 def load_knowledge_base():
-    # Try multiple filenames
     for file in ["knowledge_base.csv", "knowledge.csv"]:
         if os.path.exists(file):
             try:
                 df = pd.read_csv(file)
-                # Clean column names (remove hidden spaces)
                 df.columns = df.columns.str.strip()
-                # Remove rows that are completely empty
                 df = df.dropna(how='all')
                 return df
-            except Exception as e:
-                st.error(f"Error reading CSV: {e}")
-    return None
+            except Exception:
+                continue
+    return pd.DataFrame(columns=["Topic", "Section", "Explanation", "Image", "Ten_Points"])
 
 knowledge_df = load_knowledge_base()
-
-if knowledge_df is None:
-    st.error("❌ Knowledge base CSV not found. Please ensure 'knowledge_base.csv' is in the folder.")
-    st.stop()
 
 # =========================
 # SESSION STATE
 # =========================
 if "page_index" not in st.session_state:
     st.session_state.page_index = 0
-
-# Sidebar Refresh (Crucial for CSV updates)
-with st.sidebar:
-    st.title("Settings")
-    if st.button("🔄 Force Reload CSV Data"):
-        st.cache_data.clear()
-        st.rerun()
 
 # =========================
 # TABS
@@ -77,165 +64,128 @@ tabs = st.tabs([
     "🧠 10 Points",
     "🔬 DNA Lab",
     "🔍 Search",
-    "📊 Data",
+    "🌐 Global Bio-Search",
     "🇮🇳 Hindi Helper",
 ])
-
-# Get current row data
-# Safety check to prevent index errors
-if st.session_state.page_index >= len(knowledge_df):
-    st.session_state.page_index = 0
-row = knowledge_df.iloc[st.session_state.page_index]
 
 # =========================
 # TAB 1: READER
 # =========================
 with tabs[0]:
-    col1, col2, col3 = st.columns([1, 2, 1])
+    if knowledge_df.empty:
+        st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
+    else:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        if col1.button("⬅ Previous"):
+            st.session_state.page_index = max(0, st.session_state.page_index - 1)
+            st.rerun()
+        
+        col2.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>", unsafe_allow_html=True)
+        
+        if col3.button("Next ➡"):
+            st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
+            st.rerun()
 
-    if col1.button("⬅ Previous"):
-        st.session_state.page_index = max(0, st.session_state.page_index - 1)
-        st.rerun()
-
-    col2.markdown(
-        f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>",
-        unsafe_allow_html=True
-    )
-
-    if col3.button("Next ➡"):
-        st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
-        st.rerun()
-
-    st.divider()
-
-    left, right = st.columns([2, 1])
-
-    with left:
-        st.header(row.get("Topic", "Untitled"))
-        st.write(row.get("Explanation", "No explanation provided."))
-
-        # Check for Detailed_Explanation column
-        det_expl = row.get("Detailed_Explanation", "No additional details.")
-        with st.expander("📘 Detailed Explanation"):
-            st.write(det_expl)
-
-    with right:
-        img = str(row.get("Image", ""))
-        if img and os.path.exists(img):
-            with st.expander("🖼️ Show Diagram", expanded=True):
+        st.divider()
+        row = knowledge_df.iloc[st.session_state.page_index]
+        left, right = st.columns([2, 1])
+        
+        with left:
+            st.header(row.get("Topic", "Untitled"))
+            st.write(row.get("Explanation", "No explanation available."))
+            with st.expander("📘 Detailed Explanation"):
+                st.write(row.get("Detailed_Explanation", "No extra details available."))
+        
+        with right:
+            img = str(row.get("Image", ""))
+            if img and os.path.exists(img):
                 st.image(img, use_container_width=True)
-        else:
-            st.info("No diagram available.")
+            else:
+                st.info("No diagram available.")
 
 # =========================
-# TAB 2: 10 POINTS (FIXED LOGIC)
+# TAB 2: 10 POINTS
 # =========================
 with tabs[1]:
     st.header("🧠 10 Key Exam Points")
-    
-    # Check if the column exists
-    if "Ten_Points" in knowledge_df.columns:
-        points_raw = row.get("Ten_Points", "")
-        
-        # Check if cell is empty or NaN
-        if pd.isna(points_raw) or str(points_raw).strip() == "":
-            st.warning(f"No points found in the 'Ten_Points' column for: {row.get('Topic')}")
-            st.info("Ensure your CSV has data in the same row as the topic.")
+    if not knowledge_df.empty:
+        row = knowledge_df.iloc[st.session_state.page_index]
+        pts = row.get("Ten_Points", "")
+        if pd.isna(pts) or str(pts).strip() == "":
+            st.info("No points available for this topic.")
         else:
-            # Split by newline (Excel Alt+Enter)
-            points_list = str(points_raw).split("\n")
-            for p in points_list:
-                clean_p = p.strip()
-                if clean_p:
-                    # If the user already included numbers, don't double up
-                    if clean_p[0].isdigit() and ('.' in clean_p[:3] or ')' in clean_p[:3]):
-                        st.write(clean_p)
-                    else:
-                        st.write(f"• {clean_p}")
+            for p in str(pts).split("\n"):
+                if p.strip(): st.write(f"• {p.strip()}")
     else:
-        st.error("❌ Column 'Ten_Points' not found in your CSV file.")
-        st.write("Columns detected:", list(knowledge_df.columns))
+        st.info("Knowledge base is empty.")
 
 # =========================
 # TAB 3: DNA LAB
 # =========================
 with tabs[2]:
     st.header("🔬 DNA Analysis Tool")
-    seq = st.text_area("Paste DNA sequence:", "ATGC").upper().strip()
-
-    if st.button("Analyze"):
+    seq = st.text_area("Paste DNA sequence (A, T, G, C):", "ATGC").upper().strip()
+    if st.button("Analyze Sequence"):
         if seq:
             try:
                 gc = (seq.count("G") + seq.count("C")) / len(seq) * 100
                 st.metric("GC Content", f"{gc:.2f}%")
+                st.text(f"Length: {len(seq)} bp")
             except ZeroDivisionError:
-                st.error("Please enter a valid sequence.")
+                st.error("Invalid sequence.")
 
 # =========================
-# TAB 4: SEARCH (TEXT + OCR)
+# TAB 4: INTERNAL SEARCH
 # =========================
 with tabs[3]:
-    st.header("🔍 Smart Search (Text + Diagrams)")
-    query = st.text_input("Search term").lower().strip()
-
+    st.header("🔍 Search Internal Textbook")
+    query = st.text_input("Search for a term (Text or Diagram)...").lower()
     if query:
-        found_any = False
+        found = False
         for i, r in knowledge_df.iterrows():
-            topic = str(r.get("Topic", "")).lower()
-            expl = str(r.get("Explanation", "")).lower()
-            img = str(r.get("Image", ""))
-
-            found_in = []
-            if query in topic or query in expl:
-                found_in.append("Text")
-
-            # OCR Search
-            if img and os.path.exists(img):
-                if query in get_text_from_image(img):
-                    found_in.append("Diagram")
-
-            if found_in:
-                found_any = True
-                with st.expander(f"📖 {r.get('Topic', 'Untitled')} (Page {i+1})"):
-                    st.write(r.get("Explanation", ""))
-                    if "Diagram" in found_in:
-                        st.success("🎯 Found inside the diagram!")
-                    if st.button(f"Go to Page {i+1}", key=f"search_go_{i}"):
+            txt_match = query in str(r['Topic']).lower() or query in str(r['Explanation']).lower()
+            img_text = get_text_from_image(str(r.get('Image', '')))
+            if txt_match or query in img_text:
+                found = True
+                with st.expander(f"📖 {r['Topic']} (Page {i+1})"):
+                    st.write(r['Explanation'])
+                    if query in img_text: st.success("Found in Diagram!")
+                    if st.button(f"Go to Page {i+1}", key=f"src_{i}"):
                         st.session_state.page_index = i
                         st.rerun()
-
-        if not found_any:
-            st.warning("No matches found in text or diagrams.")
+        if not found: st.warning("No matches found.")
 
 # =========================
-# TAB 5: DATA
+# TAB 5: GLOBAL BIO-SEARCH
 # =========================
 with tabs[4]:
-    st.header("📊 Knowledge Base Viewer")
-    st.dataframe(knowledge_df)
+    st.header("🌐 Global Bio-Intelligence")
+    st.caption("Live connection to NCBI (National Center for Biotechnology Information)")
+    s_type = st.selectbox("Database", ["pubmed", "gene", "disease"])
+    s_query = st.text_input(f"Enter {s_type} keyword:")
     
-    st.divider()
-    st.subheader("Upload New Data")
-    uploaded_file = st.file_uploader("Upload a new CSV", type="csv")
-    if uploaded_file:
-        new_df = pd.read_csv(uploaded_file)
-        st.write("Preview of uploaded file:")
-        st.dataframe(new_df)
+    if st.button("Search NCBI"):
+        if s_query:
+            with st.spinner("Searching..."):
+                try:
+                    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+                    res = requests.get(url, params={"db": s_type, "term": s_query, "retmode": "json", "retmax": 5}).json()
+                    ids = res.get("esearchresult", {}).get("idlist", [])
+                    if ids:
+                        for rid in ids:
+                            st.markdown(f"🔗 [Record {rid}](https://www.ncbi.nlm.nih.gov/{s_type}/{rid})")
+                    else:
+                        st.warning("No results found.")
+                except:
+                    st.error("API Connection Error.")
 
 # =========================
 # TAB 6: HINDI HELPER
 # =========================
 with tabs[5]:
-    st.header("🇮🇳 Hindi Explanation Helper")
-    text_to_translate = st.text_area("Paste English text here:", height=150)
-
-    if st.button("Translate to Hindi"):
-        if not text_to_translate.strip():
-            st.warning("Please enter text.")
-        else:
-            try:
-                hindi_translation = GoogleTranslator(source="auto", target="hi").translate(text_to_translate)
-                st.subheader("📝 Hindi Translation")
-                st.info(hindi_translation)
-            except Exception as e:
-                st.error(f"Translation error: {e}")
+    st.header("🇮🇳 Hindi Helper")
+    txt = st.text_area("Paste English text to translate to Hindi:")
+    if st.button("Translate"):
+        if txt.strip():
+            translated = GoogleTranslator(source="auto", target="hi").translate(txt)
+            st.info(translated)
