@@ -3,6 +3,8 @@ import pandas as pd
 import os
 from deep_translator import GoogleTranslator
 import easyocr
+from indic_transliteration import sanscript
+from indic_transliteration.sanscript import transliterate
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Bio-Tech Smart Textbook", layout="wide")
@@ -10,19 +12,20 @@ st.set_page_config(page_title="Bio-Tech Smart Textbook", layout="wide")
 # --- INITIALIZE OCR ---
 @st.cache_resource
 def load_ocr():
+    # Loading English reader
     return easyocr.Reader(['en'])
 
 reader = load_ocr()
 
 # --- OPTIMIZED OCR CACHING ---
-# This function reads the image ONCE and remembers the text
 @st.cache_data
 def get_text_from_image(img_path):
+    """Reads image once and stores text in cache to prevent lag."""
     if img_path and os.path.exists(img_path):
         try:
             results = reader.readtext(img_path, detail=0)
             return " ".join(results).lower()
-        except:
+        except Exception:
             return ""
     return ""
 
@@ -30,6 +33,7 @@ def get_text_from_image(img_path):
 @st.cache_data
 def load_knowledge_base():
     base_path = os.path.dirname(__file__)
+    # Checking for both possible filenames
     for file_name in ['knowledge.csv', 'knowledge_base.csv']:
         full_path = os.path.join(base_path, file_name)
         if os.path.exists(full_path):
@@ -37,7 +41,7 @@ def load_knowledge_base():
                 df = pd.read_csv(full_path, encoding='utf-8')
                 df.columns = df.columns.str.strip()
                 return df
-            except:
+            except Exception:
                 continue
     return None
 
@@ -89,10 +93,10 @@ if knowledge_df is not None:
                 gc = (seq.count('G') + seq.count('C')) / len(seq) * 100
                 st.metric("GC Content", f"{gc:.2f}%")
 
-    # --- TAB 2: SMART SEARCH (OPTIMIZED) ---
+    # --- TAB 2: SMART SEARCH (TEXT + OCR) ---
     with tabs[2]:
         st.header("🔍 AI Search (Text + Images)")
-        query = st.text_input("Search for any word (even inside diagrams):").lower().strip()
+        query = st.text_input("Search for any word (e.g. 'Ligase', 'Vector'):").lower().strip()
         
         if query:
             with st.spinner("Searching through text and diagrams..."):
@@ -100,21 +104,20 @@ if knowledge_df is not None:
                 image_matches = []
 
                 for idx, row in knowledge_df.iterrows():
-                    # 1. Check Text
+                    # 1. Search in CSV Text
                     topic = str(row.get('Topic', '')).lower()
                     expl = str(row.get('Explanation', '')).lower()
                     
                     if query in topic or query in expl:
                         all_indices.append(idx)
                     else:
-                        # 2. Check Image (Now lightning fast due to caching)
+                        # 2. Search in Image Text (Cached OCR)
                         img_file = str(row.get('Image', ''))
                         img_text = get_text_from_image(img_file)
                         if query in img_text:
                             all_indices.append(idx)
                             image_matches.append(idx)
 
-                # Remove duplicates and sort
                 all_indices = sorted(list(set(all_indices)))
 
                 if all_indices:
@@ -123,13 +126,12 @@ if knowledge_df is not None:
                         row = knowledge_df.iloc[i]
                         with st.expander(f"📖 {row['Topic']} (Page {i+1})"):
                             if i in image_matches:
-                                st.info("📍 Word found inside the diagram on this page.")
+                                st.info("📍 Word found inside a diagram/table on this page.")
                             st.write(row['Explanation'][:200] + "...")
                             
-                            # FIX: Instant jump button
-                            if st.button(f"Go to Page {i+1}", key=f"search_btn_{i}"):
+                            # Unique key for each button to prevent errors
+                            if st.button(f"Go to Page {i+1}", key=f"jump_search_{i}"):
                                 st.session_state.page_index = i
-                                st.success(f"Loaded Page {i+1}! Click the 'Reader' tab.")
                                 st.rerun()
                 else:
                     st.warning("No matches found.")
@@ -141,78 +143,61 @@ if knowledge_df is not None:
         if up:
             st.dataframe(pd.read_csv(up))
 
-        # --- TAB 4: HINDI & HINGLISH HELPER ---
+    # --- TAB 4: HINDI & HINGLISH HELPER ---
     with tabs[4]:
         st.header("🇮🇳 Language Support Center")
-        st.write("Understand complex Biotech concepts in your preferred language.")
+        st.write("Convert complex Biotech English into Pure Hindi and Romanized Hinglish.")
         
-        # User input
-        to_translate = st.text_area("Paste English sentence or paragraph here:", 
-                                   placeholder="e.g., Restriction enzymes are used to cut DNA at specific locations.",
-                                   height=100)
+        to_translate = st.text_area("Paste English text here:", height=100)
         
-        if st.button("Explain Concept"):
+        if st.button("Translate & Explain"):
             if to_translate:
                 with st.spinner("Processing..."):
-                    # 1. Get Pure Hindi Translation
+                    # 1. Get Pure Hindi (Devanagari)
                     hindi_text = GoogleTranslator(source='auto', target='hi').translate(to_translate)
                     
-                    # 2. Create Hinglish Version 
-                    # (We keep technical English words but use Hindi grammar)
-                    hinglish_text = hindi_text
-                    # Logic: We replace some common Hindi translations back to English for scientific clarity
-                    replacements = {
-                        "प्रतिबंध एंजाइम": "Restriction Enzymes",
-                        "अनुक्रम": "Sequence",
-                        "अणु": "Molecule",
-                        "क्लोनिंग": "Cloning",
-                        "पुनर्संयोजक": "Recombinant"
-                    }
-                    for hi_word, en_word in replacements.items():
-                        hinglish_text = hinglish_text.replace(hi_word, en_word)
-
-                    # --- DISPLAY RESULTS IN COLUMNS ---
-                    col1, col2 = st.columns(2)
+                    # 2. Convert Devanagari to Roman Script (Hinglish)
+                    # Using ITRANS for transliteration
+                    hinglish_roman = transliterate(hindi_text, sanscript.DEVANAGARI, sanscript.ITRANS)
                     
+                    # Clean up the Romanization to make it look like WhatsApp chat
+                    hinglish_roman = (hinglish_roman.lower()
+                                      .replace('shha', 'sh')
+                                      .replace('aa', 'a')
+                                      .replace('. ', ' ')
+                                      .replace('..', '.')
+                                      .replace('  ', ' '))
+
+                    # Display Results
+                    col1, col2 = st.columns(2)
                     with col1:
                         st.subheader("📝 Pure Hindi (शुद्ध हिंदी)")
-                        st.markdown(f"""
-                        <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #ff4b4b;">
-                        {hindi_text}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.caption("Best for Hindi medium exam answers.")
-
-                    with col2:
-                        st.subheader("🗣️ Smart Hinglish")
-                        st.markdown(f"""
-                        <div style="background-color: #e1f5fe; padding: 15px; border-radius: 10px; border-left: 5px solid #03a9f4;">
-                        {hinglish_text}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.caption("Best for understanding the logic.")
-
-                    # --- 3. KEY TERMS BREAKDOWN ---
-                    st.divider()
-                    st.subheader("🔬 Vocabulary Breakdown (शब्दकोश)")
+                        st.markdown(f"<div style='background-color:#f0f2f6; padding:15px; border-radius:10px;'>{hindi_text}</div>", unsafe_allow_html=True)
                     
-                    # Logic to show definitions of specific biotech terms
-                    terms_found = []
-                    term_definitions = {
-                        "enzyme": "**Enzyme (एंजाइम):** Biological molecules jo reaction fast karte hain.",
-                        "dna": "**DNA:** Hamara genetic blueprint (आनुवंशिक ब्लूप्रिंट).",
-                        "sequence": "**Sequence (अनुक्रम):** DNA mein bases ka order.",
-                        "restriction": "**Restriction:** Limit karna ya specific jagah par rokna.",
-                        "palindromic": "**Palindromic:** Aise words jo aage aur peeche se same read hote hain (जैसे: जहाज)."
-                    }
+                    with col2:
+                        st.subheader("🗣️ Smart Hinglish (Roman Script)")
+                        st.markdown(f"<div style='background-color:#e1f5fe; padding:15px; border-radius:10px; color:#01579b;'>{hinglish_roman}</div>", unsafe_allow_html=True)
 
-                    t_cols = st.columns(len(term_definitions))
-                    for i, (term, definition) in enumerate(term_definitions.items()):
+                    # 3. Scientific Vocabulary Definitions
+                    st.divider()
+                    st.subheader("🔬 Key Biotech Terms in this context:")
+                    term_definitions = {
+                        "enzyme": "**Enzyme:** Biological catalysts jo reactions ko fast karte hain.",
+                        "dna": "**DNA:** Deoxyribonucleic acid, jo genetic information carry karta hai.",
+                        "restriction": "**Restriction Enzymes:** DNA ko specific location pe cut karne wali 'molecular scissors'.",
+                        "palindromic": "**Palindromic:** Woh sequence jo aage aur peeche se same read ho (e.g., MADAM).",
+                        "ligase": "**Ligase:** DNA fragments ko jodne wala 'molecular glue'."
+                    }
+                    
+                    found_any = False
+                    for term, definition in term_definitions.items():
                         if term in to_translate.lower():
                             st.info(definition)
+                            found_any = True
+                    if not found_any:
+                        st.caption("No specific biotech terms detected for breakdown.")
             else:
-                st.warning("Please enter some English text first.")
-
+                st.warning("Please enter text first.")
 
 else:
-    st.error("CSV File not found. Please ensure 'knowledge.csv' is in your GitHub folder.")
+    st.error("Knowledge base (CSV) not found. Please check your file path.")
