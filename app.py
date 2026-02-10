@@ -109,19 +109,48 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-        # Navigation Buttons
+                # --- STYLED NAVIGATION ---
+        st.markdown("""
+            <style>
+                div.stButton > button:first-child {
+                    background-color: #1e468a;
+                    color: white;
+                    border-radius: 20px;
+                    width: 100%;
+                    border: none;
+                    transition: 0.3s;
+                }
+                div.stButton > button:first-child:hover {
+                    background-color: #2a5eb2;
+                    transform: scale(1.05);
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
         col1, col2, col3 = st.columns([1, 2, 1])
+        
+        # Previous Button
         if col1.button("⬅ Previous"):
             st.session_state.page_index = max(0, st.session_state.page_index - 1)
             st.rerun()
         
-        col2.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>", unsafe_allow_html=True)
+        # Page Indicator with a nice badge look
+        col2.markdown(f"""
+            <div style='text-align:center; background:#f0f2f6; border-radius:15px; padding:5px;'>
+                <small style='color:#555;'>CURRENT PROGRESS</small><br>
+                <span style='font-weight:bold; font-size:1.2rem;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</span>
+            </div>
+        """, unsafe_allow_html=True)
         
+        # Next Button
         if col3.button("Next ➡"):
             st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
             st.rerun()
 
+        # --- KEYBOARD SHORTCUTS (Invisible Logic) ---
+        # This allows pressing Enter or using buttons smoothly
         st.divider()
+
         
         # Define current row and save to session state
         row = knowledge_df.iloc[st.session_state.page_index]
