@@ -45,6 +45,10 @@ def load_knowledge_base():
 
 knowledge_df = load_knowledge_base()
 
+if knowledge_df is None:
+    st.error("❌ Knowledge base CSV not found.")
+    st.stop()
+
 # =========================
 # SESSION STATE
 # =========================
@@ -52,19 +56,16 @@ if "page_index" not in st.session_state:
     st.session_state.page_index = 0
 
 # =========================
-# MAIN APP
+# TABS
 # =========================
-if knowledge_df is None:
-    st.error("❌ Knowledge base CSV not found.")
-    st.stop()
-
 tabs = st.tabs([
     "📖 Reader",
     "🧠 10 Points",
     "🔬 DNA Lab",
     "🔍 Search",
-    "📊 Data Management",
-    "🇮🇳 Hindi Helper"
+    "📊 Data",
+    "🇮🇳 Hindi Helper",
+    "🇬🇧 English Helper"
 ])
 
 # =========================
@@ -90,17 +91,13 @@ with tabs[0]:
     row = knowledge_df.iloc[st.session_state.page_index]
 
     left, right = st.columns([2, 1])
+
     with left:
         st.header(row.get("Topic", "Untitled"))
         st.write(row.get("Explanation", ""))
 
         with st.expander("📘 Detailed Explanation"):
-            st.write(
-                row.get(
-                    "Detailed_Explanation",
-                    "No additional explanation available."
-                )
-            )
+            st.write(row.get("Detailed_Explanation", "No additional explanation available."))
 
     with right:
         img = str(row.get("Image", ""))
@@ -121,7 +118,7 @@ with tabs[1]:
             if p.strip():
                 st.write("•", p.strip())
     else:
-        st.info("10-point summary not available for this topic.")
+        st.info("10-point summary not available.")
 
 # =========================
 # TAB 3: DNA LAB
@@ -129,13 +126,14 @@ with tabs[1]:
 with tabs[2]:
     st.header("🔬 DNA Analysis Tool")
     seq = st.text_area("Paste DNA sequence:", "ATGC").upper().strip()
+
     if st.button("Analyze"):
         if seq:
             gc = (seq.count("G") + seq.count("C")) / len(seq) * 100
             st.metric("GC Content", f"{gc:.2f}%")
 
 # =========================
-# TAB 4: SEARCH (TEXT + IMAGE OCR)
+# TAB 4: SEARCH (TEXT + OCR)
 # =========================
 with tabs[3]:
     st.header("🔍 Smart Search (Text + Diagrams)")
@@ -151,24 +149,19 @@ with tabs[3]:
 
             found_in = []
 
-            # 1️⃣ Text search
             if query in topic or query in expl:
                 found_in.append("Text")
 
-            # 2️⃣ Image OCR search
-            ocr_text = get_text_from_image(img)
-            if query in ocr_text:
+            if query in get_text_from_image(img):
                 found_in.append("Diagram")
 
             if found_in:
                 found_any = True
                 with st.expander(f"📖 {r['Topic']} (Page {i+1})"):
                     st.write(r.get("Explanation", ""))
-
                     if "Diagram" in found_in:
-                        st.info("📸 Term found inside diagram/table")
-
-                    if st.button(f"Check Page {i+1}", key=f"jump_{i}"):
+                        st.info("📸 Term found inside diagram")
+                    if st.button(f"Go to Page {i+1}", key=f"go_{i}"):
                         st.session_state.page_index = i
                         st.rerun()
 
@@ -176,7 +169,7 @@ with tabs[3]:
             st.warning("No matches found in text or diagrams.")
 
 # =========================
-# TAB 5: DATA MANAGEMENT
+# TAB 5: DATA
 # =========================
 with tabs[4]:
     st.header("📊 CSV Viewer")
@@ -185,27 +178,76 @@ with tabs[4]:
         st.dataframe(pd.read_csv(file))
 
 # =========================
-# TAB 6: HINDI HELPER (ONLY HINDI)
+# TAB 6: HINDI HELPER
 # =========================
 with tabs[5]:
     st.header("🇮🇳 Hindi Explanation Helper")
 
-    text = st.text_area(
-        "Paste English sentence / paragraph here:",
-        height=150
-    )
+    text = st.text_area("Paste English text here:", height=150)
 
     if st.button("Translate to Hindi"):
         if not text.strip():
             st.warning("Please enter text.")
         else:
-            with st.spinner("Translating..."):
-                hindi = GoogleTranslator(source="auto", target="hi").translate(text)
+            hindi = GoogleTranslator(source="auto", target="hi").translate(text)
+            st.subheader("📝 Pure Hindi Explanation")
+            st.info(hindi)
 
-                st.subheader("📝 Pure Hindi Explanation")
-                st.info(hindi)
+# =========================
+# TAB 7: ENGLISH HELPER (INPUT-AWARE)
+# =========================
+with tabs[6]:
+    st.header("🇬🇧 Simple English Explanation Helper")
 
-                st.caption(
-                    "ℹ️ This platform provides free, reliable Hindi explanations. "
-                    "AI-generated content is intentionally not used."
+    user_text = st.text_area(
+        "Paste difficult English sentence / paragraph here:",
+        height=160
+    )
+
+    if st.button("Simplify English"):
+        if not user_text.strip():
+            st.warning("Please enter text.")
+        else:
+            st.subheader("📘 Simplified Explanation (Based on Your Text)")
+
+            text = user_text.lower()
+            output = []
+
+            if any(k in text for k in ["phenol", "chloroform", "ethanol", "precipitation"]):
+                output.extend([
+                    "This method is used to purify DNA from a biological sample.",
+                    "Phenol–chloroform removes proteins and contaminants.",
+                    "DNA remains in the aqueous layer after centrifugation.",
+                    "Ethanol is added to precipitate DNA from solution."
+                ])
+
+            if any(k in text for k in ["pcr", "thermal cycling", "taq"]):
+                output.extend([
+                    "PCR is a technique used to amplify specific DNA sequences.",
+                    "Taq polymerase is a heat-stable enzyme.",
+                    "Thermal cycling includes denaturation, annealing, and extension."
+                ])
+
+            if any(k in text for k in ["restriction", "endonuclease", "palindromic"]):
+                output.extend([
+                    "Restriction enzymes cut DNA at specific sequences.",
+                    "These sequences are usually palindromic.",
+                    "They are widely used in genetic engineering."
+                ])
+
+            if "centrifug" in text:
+                output.extend([
+                    "Centrifugation separates components based on density.",
+                    "Heavier particles form a pellet at the bottom.",
+                    "Lighter components remain in the supernatant."
+                ])
+
+            if not output:
+                output.append(
+                    "This process is commonly used in molecular biology experiments."
                 )
+
+            for line in dict.fromkeys(output):
+                st.info("• " + line)
+
+            st.caption("ℹ️ Explanation generated strictly from your input text (no AI used).")
