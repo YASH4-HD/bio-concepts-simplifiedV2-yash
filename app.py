@@ -41,12 +41,45 @@ if knowledge_df is not None:
     tab0, tab1, tab2, tab3 = st.tabs(["📖 Interactive Reader", "🔬 DNA Lab Tools", "🤖 AI Assistant", "📊 Data Analysis"])
 
     with tab0:
-        # Navigation
-        col_prev, col_page, col_next = st.columns([1, 2, 1])
-        if col_prev.button("⬅️ Previous Page"):
-            if st.session_state.page_index > 0:
-                st.session_state.page_index -= 1
-                st.rerun()
+    st.title("Wilson & Walker: Smart Textbook")
+    
+    # Navigation Row
+    col_prev, col_page, col_next = st.columns([1, 2, 1])
+    if col_prev.button("⬅️ Previous Page"):
+        if st.session_state.page_index > 0:
+            st.session_state.page_index -= 1
+            st.rerun()
+
+    with col_page:
+        st.markdown(f"<p style='text-align:center; font-weight:bold;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</p>", unsafe_allow_html=True)
+
+    if col_next.button("Next Page ➡️"):
+        if st.session_state.page_index < len(knowledge_df) - 1:
+            st.session_state.page_index += 1
+            st.rerun()
+
+    st.divider()
+
+    # --- CONTENT AREA ---
+    current_page = knowledge_df.iloc[st.session_state.page_index]
+    
+    # We use a 2:1 ratio (Text:Image) to keep the image smaller on the side
+    col_text, col_img = st.columns([2, 1])
+
+    with col_text:
+        st.header(current_page.get('Topic', 'No Topic'))
+        st.write(current_page.get('Explanation', 'No content available.'))
+        
+    with col_img:
+        img_path = str(current_page.get('Image', ''))
+        if img_path and os.path.exists(img_path):
+            # 1. We wrap the image in a container
+            # 2. use_container_width=True makes it fit the narrow column
+            # 3. Streamlit automatically adds a "Zoom/Full Screen" button on hover
+            st.image(img_path, caption="Click top-right to zoom", use_container_width=True)
+        else:
+            st.info("ℹ️ No diagram for this section.")
+
         
         with col_page:
             st.markdown(f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</h3>", unsafe_allow_html=True)
