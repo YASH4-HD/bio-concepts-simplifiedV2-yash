@@ -157,10 +157,8 @@ with tabs[3]:
         if not found: st.warning("No matches found.")
 
 # =========================
-# TAB 5: GLOBAL BIO-SEARCH (GOOGLE-STYLE ACCURACY)
+# TAB 5: GLOBAL BIO-SEARCH
 # =========================
-import wikipedia
-
 with tabs[4]:
     st.header("🌐 Global Bio-Intelligence")
     st.caption("Search results are now matched for accuracy (Google-style logic)")
@@ -171,49 +169,48 @@ with tabs[4]:
     if user_input:
         with st.spinner(f"Searching for '{user_input}'..."):
             try:
-                # 1. Use search to find the most relevant titles (just like Google)
+                # 1. Get the most relevant Wikipedia title
                 search_results = wikipedia.search(user_input, results=5)
                 
                 if not search_results:
                     st.error("❌ No results found on Wikipedia.")
-                    st.markdown(f"🔍 [Search Google instead](https://www.google.com/search?q={user_input}+biology)")
+                    # Fallback Google Button if Wikipedia fails
+                    google_url = f"https://www.google.com/search?q={user_input.replace(' ', '+')}+biology"
+                    st.link_button(f"🔍 Search Google for '{user_input}'", google_url)
                 else:
-                    # 2. Pick the first result from the search list
-                    # This avoids the "Sodium/DNA" confusion because 'DNA' 
-                    # will be the #1 result for a 'DNA' search.
                     target_title = search_results[0]
-                    
-                    # 3. Fetch the page and summary using the EXACT title found
-                    # We use auto_suggest=False to ensure it doesn't change our result
                     summary = wikipedia.summary(target_title, sentences=3, auto_suggest=False)
                     page = wikipedia.page(target_title, auto_suggest=False)
                     
                     st.success(f"Top Result: **{page.title}**")
                     st.info(summary)
                     
-                    # 4. Action Buttons
+                    # 2. Action Buttons (THE PRO-TIP IS HERE)
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.markdown(f"🔗 [Open Full Wikipedia Page]({page.url})")
+                        st.link_button("📖 Open Wikipedia Page", page.url, use_container_width=True)
                     with col2:
-                        st.markdown(f"🔍 [See Google Results](https://www.google.com/search?q={user_input}+biology)")
+                        # Create the Google URL
+                        google_url = f"https://www.google.com/search?q={user_input.replace(' ', '+')}+biology"
+                        # PLACE THE PRO-TIP BUTTON HERE:
+                        st.link_button(f"🔍 Search Google for '{user_input}'", google_url, use_container_width=True)
                         
             except wikipedia.exceptions.DisambiguationError as e:
-                # If there are multiple meanings, pick the one that fits biology
-                options = e.options
-                selection = options[0]
-                for opt in options:
-                    if any(bio in opt.lower() for bio in ['biology', 'gene', 'acid', 'cell', 'science']):
+                # Handle multiple meanings
+                selection = e.options[0]
+                for opt in e.options:
+                    if any(bio in opt.lower() for bio in ['biology', 'gene', 'acid', 'cell']):
                         selection = opt
                         break
-                
                 summary = wikipedia.summary(selection, sentences=3, auto_suggest=False)
-                st.warning(f"Note: Multiple meanings. Showing: **{selection}**")
+                st.warning(f"Showing Biology result: **{selection}**")
                 st.info(summary)
                 
-            except Exception as e:
-                st.error("We couldn't find a direct Wikipedia match.")
-                st.markdown(f"👉 [Click here to search Google for '{user_input}'](https://www.google.com/search?q={user_input}+biology)")
+            except Exception:
+                st.error("Could not find a direct match.")
+                google_url = f"https://www.google.com/search?q={user_input.replace(' ', '+')}+biology"
+                st.link_button(f"🔍 Search Google for '{user_input}'", google_url)
+
 
     st.divider()
 
