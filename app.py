@@ -9,12 +9,12 @@ from deep_translator import GoogleTranslator
 # PAGE CONFIG
 # =========================
 st.set_page_config(
-    page_title="Bio-Tech Smart Textbook",
+    page_title="Bio-Tech Smart AI Textbook",
     layout="wide"
 )
 
 # =========================
-# GEMINI CONFIG (SAFE)
+# GEMINI CONFIG (FREE + SAFE)
 # =========================
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel("gemini-1.5-flash")
@@ -76,7 +76,7 @@ def detect_topic(text):
     return "General biology"
 
 # =========================
-# RULE-BASED HINGLISH (FALLBACK)
+# RULE-BASED HINGLISH
 # =========================
 def rule_based_hinglish(topic):
     data = {
@@ -115,7 +115,7 @@ def rule_based_hinglish(topic):
     return "\n".join("• " + x for x in data[topic])
 
 # =========================
-# GEMINI HINGLISH (OPTIONAL)
+# GEMINI HINGLISH (SAFE)
 # =========================
 def gemini_hinglish(text, topic):
     prompt = f"""
@@ -126,20 +126,22 @@ Rules:
 - Bullet points (max 6)
 - Exam oriented
 - Scientific terms in English
-- No extra details
 - No hallucinations
 
 Topic: {topic}
 Text: {text}
 """
-    response = gemini_model.generate_content(
-        prompt,
-        generation_config={
-            "temperature": 0.3,
-            "max_output_tokens": 250
-        }
-    )
-    return response.text.strip()
+    try:
+        response = gemini_model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.3,
+                "max_output_tokens": 250
+            }
+        )
+        return response.text.strip()
+    except Exception:
+        return None
 
 # =========================
 # MAIN APP
@@ -149,25 +151,26 @@ if knowledge_df is None:
     st.stop()
 
 tabs = st.tabs([
-    "📖 Reader",
+    "📖 AI Reader",
     "🧠 10 Points",
     "🔬 DNA Lab",
     "🔍 Search",
-    "📊 Data",
-    "🇮🇳 Hinglish Helper"
+    "📊 Data Management",
+    "🇮🇳 AI Hinglish Helper"
 ])
 
 # =========================
-# TAB 1: READER
+# TAB 1: AI READER
 # =========================
 with tabs[0]:
     col1, col2, col3 = st.columns([1, 2, 1])
+
     if col1.button("⬅ Previous"):
         st.session_state.page_index = max(0, st.session_state.page_index - 1)
         st.rerun()
 
     col2.markdown(
-        f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} of {len(knowledge_df)}</h3>",
+        f"<h3 style='text-align:center;'>Page {st.session_state.page_index + 1} / {len(knowledge_df)}</h3>",
         unsafe_allow_html=True
     )
 
@@ -176,12 +179,24 @@ with tabs[0]:
         st.rerun()
 
     row = knowledge_df.iloc[st.session_state.page_index]
+
     left, right = st.columns([2, 1])
     with left:
         st.header(row.get("Topic", "Untitled"))
         st.write(row.get("Explanation", ""))
-        with st.expander("📘 Read Detailed Explanation"):
-            st.write(row.get("Detailed_Explanation", "No extra explanation available."))
+        with st.expander("📘 Detailed Explanation"):
+            st.write(row.get("Detailed_Explanation", "Not available"))
+
+        if st.button("✨ AI Hinglish Explanation"):
+            topic = detect_topic(row.get("Topic", ""))
+            ai_text = gemini_hinglish(row.get("Explanation", ""), topic)
+            if ai_text:
+                st.code(ai_text, language="text")
+                st.caption("🤖 AI-assisted explanation")
+            else:
+                st.code(rule_based_hinglish(topic), language="text")
+                st.caption("📘 Rule-based fallback")
+
     with right:
         img = str(row.get("Image", ""))
         if img and os.path.exists(img):
@@ -224,7 +239,7 @@ with tabs[3]:
                     st.rerun()
 
 # =========================
-# TAB 5: DATA
+# TAB 5: DATA MANAGEMENT
 # =========================
 with tabs[4]:
     file = st.file_uploader("Upload CSV", type="csv")
@@ -232,13 +247,13 @@ with tabs[4]:
         st.dataframe(pd.read_csv(file))
 
 # =========================
-# TAB 6: HINGLISH HELPER (GEMINI ONLY HERE)
+# TAB 6: AI HINGLISH HELPER
 # =========================
 with tabs[5]:
     st.header("🇮🇳 Hindi & Hinglish Helper")
 
     text = st.text_area("Paste English text here:", height=150)
-    use_ai = st.checkbox("🤖 Use Gemini AI for Hinglish explanation", value=False)
+    use_ai = st.checkbox("🤖 Use Gemini AI (optional)", value=False)
 
     if st.button("Translate & Explain"):
         hindi = GoogleTranslator(source="auto", target="hi").translate(text)
@@ -246,10 +261,11 @@ with tabs[5]:
 
         if use_ai:
             hinglish = gemini_hinglish(text, topic)
-            st.caption("🤖 AI-assisted explanation (Gemini)")
+            if hinglish is None:
+                hinglish = rule_based_hinglish(topic)
+                st.warning("AI unavailable. Showing rule-based explanation.")
         else:
             hinglish = rule_based_hinglish(topic)
-            st.caption("📘 Rule-based explanation")
 
         c1, c2 = st.columns(2)
         with c1:
