@@ -109,66 +109,41 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-                                                                                                      # --- THE FINAL PRO FIX ---
-        st.markdown("""
-            <style>
-                /* 1. Target ONLY buttons inside the nav-bar container */
-                div.nav-bar button {
-                    background-color: #1e468a !important;
-                    color: white !important;
-                    border-radius: 8px !important;
-                    height: 40px !important;
-                    border: none !important;
-                    font-weight: bold !important;
-                    width: 100% !important;
-                }
-                
-                /* 2. Style the Page Box to match exactly */
-                .page-indicator-box {
-                    text-align: center;
-                    background: #f0f2f6;
-                    border-radius: 8px;
-                    height: 40px;
-                    border: 1px solid #d1d5db;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                }
-            </style>
-        """, unsafe_allow_html=True)
+                                                                                                # 1. TOP PROGRESS BAR
+        progress_value = (st.session_state.page_index + 1) / len(knowledge_df)
+        st.progress(progress_value)
 
-        # Progress Bar
-        st.progress((st.session_state.page_index + 1) / len(knowledge_df))
-
-        # 3. Use a container to "lock" the CSS to these buttons only
-        with st.container():
-            # This HTML class name 'nav-bar' is what our CSS above looks for
-            st.markdown('<div class="nav-bar">', unsafe_allow_html=True)
-            
-            # Narrower ratios [0.6, 0.8, 0.6, 4] pull everything to the left
-            c1, c2, c3, c4 = st.columns([0.6, 0.8, 0.6, 4], gap="small")
-            
-            with c1:
-                if st.button("⬅ PREV", key="nav_prev", disabled=st.session_state.page_index == 0):
-                    st.session_state.page_index -= 1
-                    st.rerun()
-            
-            with c2:
-                st.markdown(f"""
-                    <div class="page-indicator-box">
-                        <small style='color:#555; font-size:0.55rem; text-transform: uppercase; line-height:1;'>PAGE</small>
-                        <span style='font-weight:bold; font-size:0.9rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            with c3:
-                if st.button("NEXT ➡", key="nav_next", disabled=st.session_state.page_index == len(knowledge_df)-1):
-                    st.session_state.page_index += 1
-                    st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+        # 2. SIMPLE TOOLBAR (Using standard columns, no complex CSS)
+        # The [0.5, 0.8, 0.5, 4] ratio keeps everything small and to the left
+        c1, c2, c3, c4 = st.columns([0.6, 0.8, 0.6, 4])
+        
+        with c1:
+            # Standard button - works every time
+            if st.button("⬅ PREV", use_container_width=True, disabled=st.session_state.page_index == 0):
+                st.session_state.page_index = max(0, st.session_state.page_index - 1)
+                st.rerun()
+        
+        with c2:
+            # Use a simple st.info or st.code for a boxed look without complex CSS
+            current_pg = st.session_state.page_index + 1
+            total_pg = len(knowledge_df)
+            st.markdown(f"""
+                <div style="border: 1px solid #ddd; border-radius: 5px; padding: 2px; text-align: center; background-color: #f9f9f9; line-height: 1.2;">
+                    <p style="margin: 0; font-size: 0.7rem; color: gray;">PAGE</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 1rem;">{current_pg} / {total_pg}</p>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with c3:
+            if st.button("NEXT ➡", use_container_width=True, disabled=st.session_state.page_index == len(knowledge_df) - 1):
+                st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
+                st.rerun()
 
         st.divider()
+
+
+
+
 
         
         # Define current row and save to session state
