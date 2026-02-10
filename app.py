@@ -107,11 +107,41 @@ if knowledge_df is not None:
             gc = (dna_input.upper().count('G') + dna_input.upper().count('C')) / len(dna_input) * 100
             st.metric("GC Content", f"{gc:.2f}%")
 
-    # --- TAB 2: AI ASSISTANT ---
-    with tab2:
-        st.header("🤖 Research Assistant")
-        st.write(f"Ask a question about: **{current_page['Topic']}**")
-        st.text_input("How can I help you today?")
+   # --- TAB 2: KNOWLEDGE SEARCH (Local AI) ---
+with tab2:
+    st.header("🔍 Wilson & Walker Search")
+    st.write(f"Currently focused on: **{current_page['Topic']}**")
+    
+    # User Search Input
+    query = st.text_input("Type a keyword to search the textbook (e.g., 'EcoRI', 'PCR', 'DNA'):")
+    
+    if query:
+        # Search the Explanation and Topic columns for the query (case-insensitive)
+        results = knowledge_df[
+            knowledge_df['Topic'].str.contains(query, case=False, na=False) | 
+            knowledge_df['Explanation'].str.contains(query, case=False, na=False)
+        ]
+        
+        if not results.empty:
+            st.success(f"Found {len(results)} matches in the textbook:")
+            
+            for i, row in results.iterrows():
+                with st.expander(f"📖 {row['Topic']} (Section {row['Section']})"):
+                    col1, col2 = st.columns([2, 1])
+                    with col1:
+                        st.write(row['Explanation'])
+                    with col2:
+                        if pd.notna(row['Image']) and os.path.exists(str(row['Image'])):
+                            st.image(str(row['Image']), use_container_width=True)
+                    
+                    # Add a button to jump to this page in the reader
+                    if st.button(f"Go to Page {i+1}", key=f"search_btn_{i}"):
+                        st.session_state.page_index = i
+                        st.rerun()
+        else:
+            st.warning(f"No specific mention of '{query}' found in the CSV. Try another keyword.")
+            st.info("💡 Tip: Try searching for broader terms like 'Enzyme' or 'Sequence'.")
+
 
     # --- TAB 3: DATA ANALYSIS ---
     with tab3:
