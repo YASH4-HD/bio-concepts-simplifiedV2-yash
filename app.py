@@ -547,12 +547,12 @@ with tabs[6]:
     st.write(f"**Protein:** `{protein}`")
 
         # 5. Scientific Insight (From your 2nd image)
-        if gc_content > 60:
-            st.warning("⚠️ High GC Content: This sequence is very stable and might require higher melting temperatures in PCR.")
-        elif gc_content < 40:
-            st.info("ℹ️ Low GC Content: Typical of AT-rich regions or specific regulatory elements.")
-        else:
-            st.success("✅ Balanced GC Content: Normal genomic distribution.")        
+    if gc_content > 60:
+        st.warning("⚠️ High GC Content: This sequence is very stable and might require higher melting temperatures in PCR.")
+    elif gc_content < 40:
+        st.info("ℹ️ Low GC Content: Typical of AT-rich regions or specific regulatory elements.")
+    else:
+        st.success("✅ Balanced GC Content: Normal genomic distribution.")        
 # =========================
 # SIDEBAR: RESEARCH REPORT
 # =========================
