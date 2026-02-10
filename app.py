@@ -157,52 +157,63 @@ with tabs[3]:
         if not found: st.warning("No matches found.")
 
 # =========================
-# TAB 5: GLOBAL BIO-SEARCH (SMART WIKIPEDIA + GOOGLE FALLBACK)
+# TAB 5: GLOBAL BIO-SEARCH (GOOGLE-STYLE ACCURACY)
 # =========================
+import wikipedia
+
 with tabs[4]:
     st.header("🌐 Global Bio-Intelligence")
-    st.caption("Smart Wikipedia Search + NCBI Integration")
+    st.caption("Search results are now matched for accuracy (Google-style logic)")
     
     st.subheader("📚 Quick Wikipedia Summary")
-    user_input = st.text_input("Enter any topic (e.g., MITOSIS, CRISPR, DNA):")
+    user_input = st.text_input("Search for any topic (e.g., DNA, MITOSIS, CRISPR):")
     
     if user_input:
-        # Step 1: Normalize Input
-        clean_query = user_input.strip().title()
-        
-        with st.spinner(f"Searching Wikipedia for '{clean_query}'..."):
+        with st.spinner(f"Searching for '{user_input}'..."):
             try:
-                # Step 2: Search first to get the correct title
-                search_results = wikipedia.search(user_input)
+                # 1. Use search to find the most relevant titles (just like Google)
+                search_results = wikipedia.search(user_input, results=5)
                 
                 if not search_results:
-                    st.error("❌ No Wikipedia results found.")
-                    st.markdown(f"🔍 [Try searching Google for '{user_input}'](https://www.google.com/search?q={user_input}+biology)")
+                    st.error("❌ No results found on Wikipedia.")
+                    st.markdown(f"🔍 [Search Google instead](https://www.google.com/search?q={user_input}+biology)")
                 else:
-                    # Step 3: Fetch summary for the best match
-                    best_match = search_results[0]
-                    summary = wikipedia.summary(best_match, sentences=3)
+                    # 2. Pick the first result from the search list
+                    # This avoids the "Sodium/DNA" confusion because 'DNA' 
+                    # will be the #1 result for a 'DNA' search.
+                    target_title = search_results[0]
                     
-                    st.success(f"Found: **{best_match}**")
+                    # 3. Fetch the page and summary using the EXACT title found
+                    # We use auto_suggest=False to ensure it doesn't change our result
+                    summary = wikipedia.summary(target_title, sentences=3, auto_suggest=False)
+                    page = wikipedia.page(target_title, auto_suggest=False)
+                    
+                    st.success(f"Top Result: **{page.title}**")
                     st.info(summary)
                     
-                    # Step 4: Links & Pro-Tip
-                    col_l, col_r = st.columns(2)
-                    with col_l:
-                        st.markdown(f"🔗 [Read full Wikipedia article]({wikipedia.page(best_match).url})")
-                    with col_r:
-                        # PRO TIP: Google Search Fallback
-                        st.markdown(f"🔍 [Search Google for '{best_match}'](https://www.google.com/search?q={best_match}+biology)")
-
+                    # 4. Action Buttons
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"🔗 [Open Full Wikipedia Page]({page.url})")
+                    with col2:
+                        st.markdown(f"🔍 [See Google Results](https://www.google.com/search?q={user_input}+biology)")
+                        
             except wikipedia.exceptions.DisambiguationError as e:
-                # Auto-fallback to the first suggested option
-                first_option = e.options[0]
-                summary = wikipedia.summary(first_option, sentences=3)
-                st.warning(f"Note: Multiple meanings. Showing result for: {first_option}")
+                # If there are multiple meanings, pick the one that fits biology
+                options = e.options
+                selection = options[0]
+                for opt in options:
+                    if any(bio in opt.lower() for bio in ['biology', 'gene', 'acid', 'cell', 'science']):
+                        selection = opt
+                        break
+                
+                summary = wikipedia.summary(selection, sentences=3, auto_suggest=False)
+                st.warning(f"Note: Multiple meanings. Showing: **{selection}**")
                 st.info(summary)
+                
             except Exception as e:
-                st.error("Could not fetch information.")
-                st.markdown(f"🔍 [Search Google for '{user_input}'](https://www.google.com/search?q={user_input}+biology)")
+                st.error("We couldn't find a direct Wikipedia match.")
+                st.markdown(f"👉 [Click here to search Google for '{user_input}'](https://www.google.com/search?q={user_input}+biology)")
 
     st.divider()
 
