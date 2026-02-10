@@ -153,10 +153,29 @@ with tabs[0]:
         # Layout: Text on Left, Diagram Spoiler on Right
         left, right = st.columns([2, 1])
         
-        with left:
+       with left:
             st.header(row.get("Topic", "Untitled"))
+            
+            # --- NEW: AUTO-TAG GENERATOR ---
+            # This logic simulates NLP entity extraction
+            bio_keywords = ["DNA", "RNA", "Protein", "CRISPR", "Gene", "Cell", "Enzyme", "Mutation", "Pathway", "Genomics"]
+            text_content = str(row.get("Explanation", "")) + " " + str(row.get("Detailed_Explanation", ""))
+            
+            # Find which keywords are in the text
+            found_tags = [tag for tag in bio_keywords if tag.lower() in text_content.lower()]
+            
+            if found_tags:
+                tag_html = ""
+                for t in found_tags:
+                    tag_html += f'<span style="background-color:#e1f5fe; color:#01579b; padding:4px 10px; border-radius:15px; margin-right:5px; font-size:0.8rem; font-weight:bold; border:1px solid #01579b;">🧬 {t}</span>'
+                st.markdown(tag_html, unsafe_allow_html=True)
+                st.write("") # Spacer
+            
+            # --- END TAGS ---
+
             st.write(row.get("Explanation", "No explanation available."))
-            with st.expander("📘 Detailed Explanation"):
+            
+            with st.expander("📘 Detailed Analysis & Mechanism"):
                 st.write(row.get("Detailed_Explanation", "No extra details available."))
         
         with right:
