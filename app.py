@@ -3,6 +3,9 @@ import pandas as pd
 import os
 from deep_translator import GoogleTranslator
 import easyocr
+import re
+from indic_transliteration import sanscript
+from indic_transliteration.sanscript import transliterate
 
 # =========================
 # PAGE CONFIG
@@ -54,42 +57,40 @@ if "page_index" not in st.session_state:
 # =========================
 # SMART HINGLISH ENGINE
 # =========================
-def generate_smart_hinglish(text):
-    t = text.lower()
+def generate_smart_hinglish(english_text, hindi_text):
+    # 1. Convert Hindi script to Roman script (Hinglish sounds)
+    raw_roman = transliterate(hindi_text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
+    
+    # 2. Fix common "broken" library sounds to WhatsApp style
+    sound_fixes = {
+        "shha": "sh", "aa": "a", "haim": "hain", "mam": "mein", 
+        "upayoga": "use", "karke": "karke", "liye": "liye", 
+        "vishi": "specific", "lakshyom": "targets", "badhane": "increase",
+        "denae": "DNA", "sekalimga": "cycling", "tharmala": "thermal",
+        "taka": "Taq", "polimeresa": "polymerase"
+    }
+    for old, new in sound_fixes.items():
+        raw_roman = raw_roman.replace(old, new)
 
-    if "thermal cycling" in t and "taq" in t:
-        return (
-            "PCR mein Taq polymerase ka use hota hai, "
-            "jisme thermal cycling ke through specific DNA targets amplify kiye jaate hain."
-        )
+    # 3. Protect Scientific Terms (Force English spelling)
+    sci_terms = ["dna", "taq", "polymerase", "pcr", "thermal", "cycling", "vector", "enzyme", "amplify"]
+    for term in sci_terms:
+        if term in english_text.lower():
+            # Use regex to find the butchered version (e.g., 'dienae') and replace with 'DNA'
+            pattern = r'\b' + term[:2] + r'[a-z]*\b'
+            raw_roman = re.sub(pattern, term, raw_roman)
 
-    if "restriction enzyme" in t:
-        return (
-            "Restriction enzymes DNA ko specific palindromic sequences par cut karte hain, "
-            "jo cloning ke liye bahut important hota hai."
-        )
-
-    if "enzyme" in t:
-        return (
-            "Enzyme ek biological catalyst hota hai "
-            "jo reaction ko fast karta hai bina khud consume hue."
-        )
-
-    return (
-        "Simple words mein, yeh biological process lab mein "
-        "important molecules ko samajhne ke liye use hota hai."
-    )
+    return raw_roman.strip().capitalize()
 
 # =========================
 # MAIN APP
 # =========================
 if knowledge_df is None:
-    st.error("❌ Knowledge base CSV not found.")
+    st.error("❌ Knowledge base CSV not found. Please ensure 'knowledge.csv' is in the folder.")
     st.stop()
 
 tabs = st.tabs([
     "📖 Reader",
-    "🧠 10 Points",
     "🔬 DNA Lab",
     "🔍 Search",
     "📊 Data",
@@ -121,45 +122,21 @@ with tabs[0]:
     row = knowledge_df.iloc[st.session_state.page_index]
 
     left, right = st.columns([2, 1])
-
     with left:
         st.header(row.get("Topic", "Untitled"))
         st.write(row.get("Explanation", ""))
 
-        with st.expander("📘 Read Detailed Explanation"):
-            st.write(
-                row.get(
-                    "Detailed_Explanation",
-                    "No additional explanation available."
-                )
-            )
-
     with right:
-        img = str(row.get("Image", ""))
-        if img and os.path.exists(img):
-            with st.expander("🖼️ Show Diagram"):
-                st.image(img, width=300)
-                st.caption("Click image to zoom")
+        img_path = str(row.get("Image", ""))
+        if img_path and os.path.exists(img_path):
+            st.image(img_path, use_container_width=True)
         else:
-            st.info("No diagram available.")
+            st.info("No diagram available for this page.")
 
 # =========================
-# TAB 2: 10 POINTS
+# TAB 2: DNA LAB
 # =========================
 with tabs[1]:
-    st.header("🧠 10 Key Exam Points")
-
-    points = row.get("Ten_Points", "")
-    if isinstance(points, str) and points.strip():
-        for p in points.split("\n"):
-            st.write("•", p.strip())
-    else:
-        st.info("10-point summary not available for this topic.")
-
-# =========================
-# TAB 3: DNA LAB
-# =========================
-with tabs[2]:
     st.header("🔬 DNA Analysis Tool")
     seq = st.text_area("Paste DNA sequence:", "ATGC").upper().strip()
 
@@ -167,90 +144,109 @@ with tabs[2]:
         if seq:
             gc = (seq.count("G") + seq.count("C")) / len(seq) * 100
             st.metric("GC Content", f"{gc:.2f}%")
+        else:
+            st.warning("Please enter a sequence.")
 
 # =========================
-# TAB 4: SEARCH (TEXT + OCR)
+# TAB 3: SEARCH (TEXT + OCR)
 # =========================
-with tabs[3]:
+with tabs[2]:
     st.header("🔍 Smart Search")
-    query = st.text_input("Search term").lower()
+    query = st.text_input("Search term (even inside images)").lower()
 
     if query:
         matches = []
         image_hits = []
 
-        for i, r in knowledge_df.iterrows():
-            topic = str(r.get("Topic", "")).lower()
-            expl = str(r.get("Explanation", "")).lower()
+        with st.spinner("Scanning pages..."):
+            for i, row in knowledge_df.iterrows():
+                topic = str(row.get("Topic", "")).lower()
+                expl = str(row.get("Explanation", "")).lower()
 
-            if query in topic or query in expl:
-                matches.append(i)
-            else:
-                img = str(r.get("Image", ""))
-                if query in get_text_from_image(img):
+                if query in topic or query in expl:
                     matches.append(i)
-                    image_hits.append(i)
+                else:
+                    img = str(row.get("Image", ""))
+                    if query in get_text_from_image(img):
+                        matches.append(i)
+                        image_hits.append(i)
 
         if matches:
             st.success(f"Found {len(matches)} matches")
             for i in matches:
                 r = knowledge_df.iloc[i]
-                with st.expander(f"{r['Topic']} (Page {i+1})"):
+                with st.expander(f"📖 {r['Topic']} (Page {i+1})"):
                     if i in image_hits:
-                        st.info("📍 Found inside diagram")
-                    st.write(r["Explanation"])
-                    if st.button(f"Go to Page {i+1}", key=f"go_{i}"):
+                        st.info("📍 Term found inside a diagram/image.")
+                    st.write(r["Explanation"][:250] + "...")
+                    if st.button(f"Go to page {i+1}", key=f"go_{i}"):
                         st.session_state.page_index = i
                         st.rerun()
         else:
             st.warning("No results found.")
 
 # =========================
-# TAB 5: DATA
+# TAB 4: DATA
+# =========================
+with tabs[3]:
+    st.header("📊 CSV Viewer")
+    uploaded_file = st.file_uploader("Upload Lab CSV", type="csv")
+    if uploaded_file:
+        st.dataframe(pd.read_csv(uploaded_file))
+    else:
+        st.write("Upload a CSV file to analyze lab data.")
+
+# =========================
+# TAB 5: HINGLISH HELPER
 # =========================
 with tabs[4]:
-    st.header("📊 CSV Viewer")
-    file = st.file_uploader("Upload CSV", type="csv")
-    if file:
-        st.dataframe(pd.read_csv(file))
-
-# =========================
-# TAB 6: HINGLISH HELPER
-# =========================
-with tabs[5]:
     st.header("🇮🇳 Hindi & Hinglish Helper")
+    st.write("Understand complex Biotech in simple conversational language.")
 
-    text = st.text_area(
+    input_text = st.text_area(
         "Paste English sentence here:",
+        placeholder="e.g., Thermal cycling to amplify specific DNA targets using Taq",
         height=100
     )
 
     if st.button("Translate & Explain"):
-        if text.strip():
-            hindi = GoogleTranslator(source="auto", target="hi").translate(text)
-            hinglish = generate_smart_hinglish(text)
+        if input_text.strip():
+            with st.spinner("Analyzing..."):
+                # 1. Pure Hindi
+                hindi_res = GoogleTranslator(source="auto", target="hi").translate(input_text)
 
-            c1, c2 = st.columns(2)
-            with c1:
-                st.subheader("📝 Pure Hindi")
-                st.info(hindi)
+                # 2. Smart Hinglish
+                hinglish_res = generate_smart_hinglish(input_text, hindi_res)
 
-            with c2:
-                st.subheader("🗣 Smart Hinglish")
-                st.success(hinglish)
-				
-			st.divider()
-            st.subheader("🔬 Key Biotech Terms")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.subheader("📝 Pure Hindi (Exam Style)")
+                    st.markdown(f"""<div style="background-color:#f0f2f6; padding:15px; border-radius:10px; border-left:5px solid #ff4b4b;">
+                                {hindi_res}</div>""", unsafe_allow_html=True)
 
-                terms = {
-                    "taq": "Taq Polymerase: Heat-stable enzyme used in PCR.",
-                    "thermal cycling": "Thermal cycling: Repeated heating and cooling in PCR.",
-                    "dna": "DNA: Genetic material of cells.",
-                    "pcr": "PCR: Technique to amplify DNA."
+                with c2:
+                    st.subheader("🗣 Smart Hinglish (Chat Style)")
+                    st.markdown(f"""<div style="background-color:#e1f5fe; padding:15px; border-radius:10px; border-left:5px solid #03a9f4; color:#01579b;">
+                                {hinglish_res}</div>""", unsafe_allow_html=True)
+
+                # 3. Key Term Dictionary
+                st.divider()
+                st.subheader("🔬 Key Biotech Terms")
+                terms_map = {
+                    "taq": "<b>Taq Polymerase:</b> Ek heat-stable enzyme jo PCR reaction mein DNA banane mein madad karta hai.",
+                    "pcr": "<b>PCR:</b> Polymerase Chain Reaction - DNA ki copies badhane ki technique.",
+                    "thermal cycling": "<b>Thermal Cycling:</b> Temperature ko upar-neeche karke DNA amplify karne ka process.",
+                    "amplify": "<b>Amplify:</b> DNA ki quantity ko badhana (making many copies)."
                 }
-
-                for k, v in terms.items():
-                    if k in text.lower():
-                        st.info(v)
+                
+                t_cols = st.columns(2)
+                found_term = False
+                for idx, (k, v) in enumerate(terms_map.items()):
+                    if k in input_text.lower():
+                        with t_cols[idx % 2]:
+                            st.info(v, icon="📍")
+                        found_term = True
+                if not found_term:
+                    st.caption("No specific biotech definitions found for this sentence.")
         else:
-            st.warning("Please enter text.")
+            st.warning("Please enter text to translate.")
