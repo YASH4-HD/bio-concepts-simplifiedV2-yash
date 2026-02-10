@@ -52,37 +52,37 @@ if "page_index" not in st.session_state:
     st.session_state.page_index = 0
 
 # =========================
-# SMART HINGLISH ENGINE (ULTIMATE FIX)
+# SMART HINGLISH ENGINE (FORCE-FIXED)
 # =========================
-from indic_transliteration import sanscript
-from indic_transliteration.sanscript import transliterate
-import re
-
 def generate_smart_hinglish(english_text, hindi_text):
-    # 1. Convert Hindi to Roman sounds
-    raw_roman = transliterate(hindi_text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
+    from indic_transliteration import sanscript
+    from indic_transliteration.sanscript import transliterate
+    import re
 
-    # 2. Fix Chat Sounds
-    sound_fixes = {
+    # 1. Convert Hindi to Roman sounds
+    text = transliterate(hindi_text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
+
+    # 2. Manual "Chat Style" Fixes
+    fixes = {
         "shha": "sh", "aa": "a", "haim": "hain", "mam": "mein", 
         "upayoga": "use", "karake": "karke", "lie": "liye",
-        "vishi": "specific", "badhane": "increase", "lakshyom": "targets"
+        "vishi": "specific", "badhane": "increase", "lakshyom": "targets",
+        "ba.dhane": "increase"
     }
-    for old, new in sound_fixes.items():
-        raw_roman = raw_roman.replace(old, new)
+    for old, new in fixes.items():
+        text = text.replace(old, new)
 
-    # 3. THE HARD-SWAP (Fixes 'dienae' and 'saikalimga')
-    # We look at the original English words and force them back
-    important_terms = ["dna", "taq", "thermal", "cycling", "amplify", "specific", "targets", "pcr", "enzyme"]
-    
-    for term in important_terms:
-        if term in english_text.lower():
-            # This regex finds any butchered word starting with the same 2 letters and replaces it
-            # e.g., it finds 'dienae' and replaces with 'DNA'
-            pattern = r'\b' + term[:2] + r'[a-z]*\b'
-            raw_roman = re.sub(pattern, term.upper() if term == "dna" else term, raw_roman)
+    # 3. THE FORCE-FIX: This replaces the broken words with original English
+    # We look for the broken patterns and swap them out
+    text = re.sub(r'die[a-z]*', 'DNA', text)
+    text = re.sub(r'saika[a-z]*', 'cycling', text)
+    text = re.sub(r'thar[a-z]*', 'thermal', text)
+    text = re.sub(r'taka', 'Taq', text)
+    text = re.sub(r'polima[a-z]*', 'polymerase', text)
+    text = re.sub(r'vishi[a-z]*', 'specific', text)
+    text = re.sub(r'laksh[a-z]*', 'targets', text)
 
-    return raw_roman.strip().capitalize()
+    return text.strip().capitalize()
 # =========================
 # MAIN APP
 # =========================
