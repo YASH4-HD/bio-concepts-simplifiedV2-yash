@@ -9,3 +9,4 @@ deep-translator
 easyocr
 opencv-python-headless
 indic-transliteration
+google-generativeai
