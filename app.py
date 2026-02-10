@@ -134,13 +134,13 @@ st.markdown("""
 
 # --- TABS DEFINITION ---
 tabs = st.tabs([
-    "📖 Reader",
-    "🧠 10 Points",
-    "🔬 DNA Lab",
-    "🔍 Search",
-    "🌐 Global Bio-Search",
-    "🇮🇳 Hindi Helper"
-    "🧪 Sequence Analyzer"
+    "📖 Reader", 
+    "🧠 10 Points", 
+    "🧬 DNA Lab", 
+    "🔍 Search", 
+    "🌐 Global Bio-Search", 
+    "🇮🇳 Hindi Helper", 
+    "🧪 Sequence Analyzer"  # <--- Make sure this 7th one is here!
 ])
 # =========================
 # TAB 1: READER
