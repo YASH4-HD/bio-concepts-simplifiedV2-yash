@@ -189,27 +189,36 @@ with tabs[0]:
 
 
 # =========================
-# TAB 2: 10 POINTS
+# TAB 2: 10 POINTS (Updated)
 # =========================
 with tabs[1]:
     st.header("🧠 10 Key Exam Points")
     
     if 'selected_row' in st.session_state:
         current_row = st.session_state['selected_row']
-        # Try both common column names for points
-        pts = current_row.get('Ten_Points') or current_row.get('10_Points') or "No points available for this topic."
+        st.info(f"Topic: **{current_row.get('Topic', 'Selected Topic')}**")
         
-        st.info(f"Summary for: **{current_row.get('Topic', 'Selected Topic')}**")
-        st.write(pts)
+        # --- NEW: STUDY MODE TOGGLE ---
+        study_mode = st.toggle("Enable Study Mode (Hide Notes)", value=False)
+        
+        pts = current_row.get('Ten_Points') or current_row.get('10_Points') or "No points available."
+        
+        if study_mode:
+            st.warning("🙈 **Study Mode Active:** Try to recall the key points about this topic before revealing them!")
+            if st.button("👁️ Reveal Notes for 10 Seconds"):
+                st.write(pts)
+        else:
+            # Standard View
+            st.success("📝 **Full Notes:**")
+            st.write(pts)
         
         st.divider()
+        # --- CITATION & DOWNLOAD ---
         col_cite, col_dl = st.columns(2)
-        
         with col_cite:
             if st.button("📋 Generate Citation"):
                 citation = f"Source: Bio-Verify 2026, Topic: {current_row.get('Topic')}, Date: {datetime.date.today()}"
                 st.code(citation, language="text")
-        
         with col_dl:
             st.download_button(
                 label="📥 Download Study Notes",
