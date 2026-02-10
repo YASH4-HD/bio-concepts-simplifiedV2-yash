@@ -21,9 +21,9 @@ with st.sidebar:
     st.title("🛡️ Bio-Verify 2026")
     
     # This is the fix:
-    auto_date = datetime.date.today().strftime("%d %b %Y").upper()
+    today_auto = datetime.date.today().strftime("%d %b") + " 2026"
 
-    st.sidebar.write(f"📅 **{auto_date}**")
+    st.sidebar.title(f"📅 {today_auto.upper()}")
     
     st.divider()
     st.success("✅ Live API Connection: Active")
