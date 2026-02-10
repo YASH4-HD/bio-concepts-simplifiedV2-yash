@@ -7,6 +7,7 @@ import requests
 import wikipedia
 import datetime
 import plotly.express as px
+import datetime
 # =========================
 # PAGE CONFIG
 # =========================
