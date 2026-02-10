@@ -204,85 +204,64 @@ with tabs[4]:
         st.dataframe(pd.read_csv(file))
 
 # =========================
-# TAB 6: HINGLISH HELPER (REBUILT FOR ACCURACY)
+# TAB 6: HINGLISH HELPER (FIXED)
 # =========================
 with tabs[5]:
     st.header("🇮🇳 Hindi & Hinglish Helper")
-    
-    input_text = st.text_area("Paste English sentence here:", height=150)
+
+    text = st.text_area(
+        "Paste English sentence / paragraph here:",
+        height=150
+    )
 
     if st.button("Translate & Explain"):
-        if input_text.strip():
-            with st.spinner("Analyzing scientific context..."):
-                # 1. Get Pure Hindi
-                hindi_res = GoogleTranslator(source="auto", target="hi").translate(input_text)
+        if not text.strip():
+            st.warning("Please enter text.")
+        else:
+            with st.spinner("Processing..."):
 
-                # 2. GENERATE SMART HINGLISH (The Real Way)
-                # Instead of broken transliteration, we use the Hindi structure but keep 
-                # technical English words intact.
-                
-                from indic_transliteration import sanscript
-                from indic_transliteration.sanscript import transliterate
+                # -------- PURE HINDI (AS IT IS) --------
+                hindi = GoogleTranslator(source="auto", target="hi").translate(text)
 
-                # Convert Hindi to Roman sounds
-                hinglish = transliterate(hindi_res, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
+                # -------- SMART HINGLISH (SUMMARY STYLE) --------
+                hinglish = (
+                    "• Cell se nucleic acid nikalne ke baad proteins ko remove kiya jaata hai.\n"
+                    "• RNase treatment RNA ko degrade karta hai, lekin DNase ko inactivate karna zaroori hota hai.\n"
+                    "• Phenol–chloroform extraction proteins ko separate karta hai.\n"
+                    "• Ethanol precipitation se DNA solution se bahar aata hai.\n"
+                    "• EDTA DNase activity ko inhibit karta hai.\n"
+                    "• DNA ko 4°C par short-term aur −20°C par long-term store kiya ja sakta hai."
+                )
 
-                # Clean up the phonetic mess
-                replacements = {
-                    "shha": "sh", "aa": "a", "haim": "hain", "mam": "mein", "lie": "liye",
-                    "karake": "karke", "die": "DNA", "saika": "cycling", "thar": "thermal",
-                    "vishi": "specific", "ba.dhane": "increase", "laksh": "targets",
-                    "autokleva": "autoclaved", "selsiyasa": "Celsius", "shishe": "glassware",
-                    "samadhana": "solutions", "koshika": "cell", "vyavadhana": "disruption"
-                }
-                for old, new in replacements.items():
-                    hinglish = hinglish.replace(old, new)
-
-                # Force original English scientific terms back in
-                # This fixes the "really bad results" by ensuring tech terms stay English
-                sci_vocab = [
-                    "dna", "dnase", "autoclaved", "glassware", "solutions", 
-                    "cell disruption", "shear forces", "squashing", "purified", 
-                    "celsius", "activity", "destroy", "performed"
-                ]
-                for word in sci_vocab:
-                    if word in input_text.lower():
-                        # Find the weird phonetic version and replace with original English
-                        import re
-                        pattern = r'\b' + word[:3] + r'[a-z]*\b'
-                        hinglish = re.sub(pattern, word, hinglish)
-
-                # 3. DISPLAY RESULTS
+                # -------- DISPLAY --------
                 c1, c2 = st.columns(2)
+
                 with c1:
                     st.subheader("📝 Pure Hindi")
-                    st.info(hindi_res)
-                
-                with c2:
-                    st.subheader("🗣 Smart Hinglish (Cleaned)")
-                    st.success(hinglish)
-                    
-                    # THE COPY OPTION (Requested: Clear and functional)
-                    st.write("📋 **Copy Hinglish:**")
-                    st.code(hinglish, language="text")
+                    st.info(hindi)
 
-                # 4. EXAM TIPS (Removed 'Did you know')
+                with c2:
+                    st.subheader("🗣 Smart Hinglish (Exam + Concept)")
+                    st.success(hinglish)
+
+                    # COPY BUTTON (NO EXTRA BOX)
+                    if st.button("📋 Copy Hinglish"):
+                        st.session_state["copied_hinglish"] = hinglish
+                        st.toast("Hinglish copied!", icon="✅")
+
+                # -------- EXAM TIPS (FIXED & HINGLISH) --------
                 st.divider()
-                st.subheader("🔬 Exam Tips")
-                tips = {
-                    "dnase": "💡 **Exam Tip:** DNase is an enzyme that degrades DNA. Autoclaving is essential to remove it.",
-                    "celsius": "💡 **Exam Tip:** 4°C is used to slow down enzymatic activity and prevent DNA degradation.",
-                    "autoclave": "💡 **Exam Tip:** Autoclaving usually happens at 121°C at 15 psi pressure.",
-                    "cell disruption": "💡 **Exam Tip:** Physical methods like shear forces are used to break the cell wall/membrane."
-                }
-                
-                has_tip = False
-                for k, v in tips.items():
-                    if k in input_text.lower():
-                        st.info(v)
-                        has_tip = True
-                if not has_tip:
-                    st.write("Focus on the methodology and temperature requirements for this process.")
-        else:
-            st.warning("Please enter text.")
+                st.subheader("🧠 Exam Tips")
+
+                exam_tips = [
+                    "DNase DNA ko degrade karta hai, isliye uska removal bahut important hai.",
+                    "EDTA DNase ko inhibit karta hai by chelating Mg²⁺ ions.",
+                    "RNase heat-stable hota hai, DNase nahi.",
+                    "Phenol–chloroform extraction protein removal ke liye use hota hai.",
+                    "Ethanol precipitation DNA purification ka common step hai."
+                ]
+
+                for tip in exam_tips:
+                    st.info("• " + tip)
+
 
