@@ -140,6 +140,7 @@ tabs = st.tabs([
     "🔍 Search",
     "🌐 Global Bio-Search",
     "🇮🇳 Hindi Helper"
+    "🧪 Sequence Analyzer"
 ])
 # =========================
 # TAB 1: READER
@@ -473,6 +474,51 @@ with tabs[5]:
                 st.info(translated)
             except Exception as e:
                 st.error("Translation Error.")
+# ==========================================
+# TAB 7: SEQUENCE ANALYZER
+# ==========================================
+with tabs[6]:
+    st.header("🧬 Molecular Sequence Analyzer")
+    st.info("Paste a DNA or RNA sequence below to calculate GC content and visualize base distribution.")
+    
+    # Input area
+    raw_seq = st.text_area("Enter Sequence:", "ATGCATGCATGCTAGCTAGCTAG").upper().strip()
+    
+    if raw_seq:
+        # 1. Basic Calculations
+        seq_len = len(raw_seq)
+        g_count = raw_seq.count('G')
+        c_count = raw_seq.count('C')
+        gc_content = ((g_count + c_count) / seq_len) * 100 if seq_len > 0 else 0
+        
+        # 2. Display Metrics
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Sequence Length", f"{seq_len} bp")
+        col2.metric("GC Content", f"{gc_content:.2f}%")
+        col3.metric("Type", "DNA" if "T" in raw_seq else "RNA/Other")
+        
+        # 3. Visualization
+        import pandas as pd
+        import plotly.express as px
+        
+        base_counts = {
+            'Base': ['Adenine (A)', 'Thymine (T)', 'Guanine (G)', 'Cytosine (C)'],
+            'Count': [raw_seq.count('A'), raw_seq.count('T'), raw_seq.count('G'), raw_seq.count('C')]
+        }
+        df_plot = pd.DataFrame(base_counts)
+        
+        fig = px.bar(df_plot, x='Base', y='Count', 
+                     title="Nucleotide Distribution",
+                     color='Base',
+                     color_discrete_sequence=["#FF4B4B", "#1C83E1", "#00C78C", "#FACA2B"])
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # 4. Complementary Strand Feature
+        with st.expander("🔗 Generate Complementary Strand"):
+            pairs = {"A": "T", "T": "A", "G": "C", "C": "G"}
+            complement = "".join([pairs.get(base, "N") for base in raw_seq])
+            st.code(f"Original: {raw_seq}\nComp:     {complement}")                
 # =========================
 # SIDEBAR: RESEARCH REPORT
 # =========================
