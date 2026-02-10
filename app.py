@@ -134,27 +134,27 @@ with tabs[0]:
                 )
             )
 
-        with right:
+    with right:
+        # --- FIXED INDENTATION HERE ---
         img = str(row.get("Image", ""))
         if img and os.path.exists(img):
-            with st.expander("🖼️ Show Diagram", expanded=True): # 'expanded=True' keeps it open
-                # FIX: Remove width=300 and use use_container_width for full quality
-                st.image(img, use_container_width=True, output_format="PNG") 
-                st.caption("🔍 Use the arrows in the top right of the image to go Fullscreen for maximum detail.")
+            with st.expander("🖼️ Show Diagram", expanded=True):
+                # FIXED: use_container_width for high resolution
+                st.image(img, use_container_width=True)
+                st.caption("🔍 Click the arrows on the image to view Fullscreen (HD)")
         else:
             st.info("No diagram available.")
-
 
 # =========================
 # TAB 2: 10 POINTS
 # =========================
 with tabs[1]:
     st.header("🧠 10 Key Exam Points")
-
     points = row.get("Ten_Points", "")
     if isinstance(points, str) and points.strip():
         for p in points.split("\n"):
-            st.write("•", p.strip())
+            if p.strip():
+                st.write("•", p.strip())
     else:
         st.info("10-point summary not available for this topic.")
 
@@ -164,42 +164,26 @@ with tabs[1]:
 with tabs[2]:
     st.header("🔬 DNA Analysis Tool")
     seq = st.text_area("Paste DNA sequence:", "ATGC").upper().strip()
-
     if st.button("Analyze"):
         if seq:
             gc = (seq.count("G") + seq.count("C")) / len(seq) * 100
             st.metric("GC Content", f"{gc:.2f}%")
 
 # =========================
-# TAB 4: SEARCH (TEXT + OCR)
+# TAB 4: SEARCH
 # =========================
 with tabs[3]:
     st.header("🔍 Smart Search")
     query = st.text_input("Search term").lower()
-
     if query:
         matches = []
-        image_hits = []
-
         for i, r in knowledge_df.iterrows():
-            topic = str(r.get("Topic", "")).lower()
-            expl = str(r.get("Explanation", "")).lower()
-
-            if query in topic or query in expl:
+            if query in str(r.get("Topic", "")).lower() or query in str(r.get("Explanation", "")).lower():
                 matches.append(i)
-            else:
-                img = str(r.get("Image", ""))
-                if query in get_text_from_image(img):
-                    matches.append(i)
-                    image_hits.append(i)
-
         if matches:
-            st.success(f"Found {len(matches)} matches")
             for i in matches:
                 r = knowledge_df.iloc[i]
                 with st.expander(f"{r['Topic']} (Page {i+1})"):
-                    if i in image_hits:
-                        st.info("📍 Found inside diagram")
                     st.write(r["Explanation"])
                     if st.button(f"Go to Page {i+1}", key=f"go_{i}"):
                         st.session_state.page_index = i
@@ -217,61 +201,22 @@ with tabs[4]:
         st.dataframe(pd.read_csv(file))
 
 # =========================
-# TAB 6: HINGLISH HELPER (ENHANCED)
+# TAB 6: HINGLISH HELPER
 # =========================
 with tabs[5]:
     st.header("🇮🇳 Hindi & Hinglish Helper")
-
-    text = st.text_area(
-        "Paste English sentence here:",
-        placeholder="e.g., Enzymes that cut DNA at specific palindromic sequences.",
-        height=100
-    )
-
+    text_area = st.text_area("Paste English sentence here:", height=100)
     if st.button("Translate & Explain"):
-        if text.strip():
+        if text_area.strip():
             with st.spinner("Processing..."):
-
-                # Pure Hindi
-                hindi = GoogleTranslator(source="auto", target="hi").translate(text)
-
-                # Smart Hinglish
-                hinglish = generate_smart_hinglish(text)
-
+                hindi = GoogleTranslator(source="auto", target="hi").translate(text_area)
+                hinglish = generate_smart_hinglish(text_area)
                 c1, c2 = st.columns(2)
                 with c1:
                     st.subheader("📝 Pure Hindi")
                     st.info(hindi)
-                    # Feature: Suggestion for Hindi medium students
-                    st.caption("💡 Tip: Use these Hindi terms for formal board exams.")
-
                 with c2:
-                    st.subheader("🗣 Smart Hinglish (Chat Style)")
+                    st.subheader("🗣 Smart Hinglish")
                     st.success(hinglish)
-                    # Feature: Copy to clipboard helper
-                    st.button("📋 Copy Hinglish", on_click=lambda: st.write(f"Copied: {hinglish}"), key="copy_btn")
-
-                # ---------- KEY BIOTECH TERMS & EXAM TIPS ----------
-                st.divider()
-                st.subheader("🔬 Key Biotech Terms & Exam Tips")
-
-                terms = {
-                    "taq": "📍 **Taq Polymerase:** Heat-stable enzyme. *Exam Tip: Mention it is isolated from Thermus aquaticus.*",
-                    "thermal cycling": "📍 **Thermal cycling:** Repeated heating/cooling. *Exam Tip: Mention denaturation, annealing, and extension.*",
-                    "dna": "📍 **DNA:** Genetic material. *Exam Tip: Always mention its double-helical structure.*",
-                    "pcr": "📍 **PCR:** DNA amplification. *Exam Tip: Invented by Kary Mullis.*",
-                    "restriction enzyme": "📍 **Restriction Enzyme:** Molecular scissors. *Exam Tip: Mention they are found in bacteria as a defense mechanism.*"
-                }
-
-                found_term = False
-                for k, v in terms.items():
-                    if k in text.lower():
-                        st.info(v)
-                        found_term = True
-                
-                if not found_term:
-                    st.info("💡 General Tip: Always draw a neat diagram in Biotech answers to score higher!")
-
         else:
             st.warning("Please enter text.")
-
