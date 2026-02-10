@@ -119,7 +119,24 @@ with tabs[1]:
                 if p.strip(): st.write(f"• {p.strip()}")
     else:
         st.info("Knowledge base is empty.")
-
+ # --- ADD THIS AT THE BOTTOM OF TAB 2 ---
+        st.divider()
+        col_cite, col_dl = st.columns(2)
+        
+        with col_cite:
+            if st.button("📋 Generate Citation"):
+                citation = f"Source: Bio-Tech Smart Textbook, Topic: {row.get('Topic')}, Accessed: {datetime.date.today()}"
+                st.code(citation, language="text")
+        
+        with col_dl:
+            # This creates a simple text file of the 10 points
+            study_notes = f"TOPIC: {row.get('Topic')}\n\nNOTES:\n{pts}"
+            st.download_button(
+                label="📥 Download Study Notes",
+                data=study_notes,
+                file_name=f"{row.get('Topic')}_Notes.txt",
+                mime="text/plain"
+            )
 # =========================
 # TAB 3: DNA LAB
 # =========================
