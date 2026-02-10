@@ -18,7 +18,7 @@ st.set_page_config(
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("Bio-Verify")
+    st.title("🛡️ Bio-Verify 2026")
     
     # This is the fix:
     current_date = datetime.date.today().strftime("%d %b %Y").upper()
