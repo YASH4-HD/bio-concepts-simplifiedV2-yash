@@ -8,6 +8,7 @@ import wikipedia
 import datetime
 import plotly.express as px
 import datetime
+import pytz
 # =========================
 # PAGE CONFIG
 # =========================
@@ -21,7 +22,8 @@ with st.sidebar:
     st.title("🛡️ Bio-Verify 2026")
     
     # This is the fix:
-    today_auto = datetime.date.today().strftime("%d %b") + " 2026"
+    ist = pytz.timezone("Asia/Kolkata")
+    today_auto = datetime.datetime.now(ist).strftime("%d %b %Y")
 
     st.sidebar.title(f"📅 {today_auto.upper()}")
     
