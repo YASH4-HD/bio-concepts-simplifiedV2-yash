@@ -109,44 +109,45 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-                                                                             # --- THE ULTIMATE NAVIGATION FIX ---
+                                                                                   # --- THE FINAL TIGHT ALIGNMENT ---
         st.markdown("""
             <style>
-                /* Style the buttons to be sleek and blue */
+                /* Style the buttons */
                 div.stButton > button {
                     background-color: #1e468a !important;
                     color: white !important;
-                    border-radius: 8px !important;
-                    height: 42px !important;
+                    border-radius: 6px !important;
+                    height: 38px !important;
                     border: none !important;
+                    font-size: 0.8rem !important;
                     font-weight: bold !important;
                     width: 100% !important;
+                    padding: 0px !important;
                 }
-                /* Style the Page indicator box precisely */
+                /* Style the Page indicator box to be much narrower */
                 .page-indicator {
                     text-align: center;
                     background: #f0f2f6;
-                    border-radius: 8px;
-                    padding: 4px;
-                    height: 42px;
+                    border-radius: 6px;
+                    padding: 2px;
+                    height: 38px;
                     border: 1px solid #d1d5db;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
+                    min-width: 80px; /* Prevents it from being too wide */
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # 1. TOP PROGRESS BAR (As suggested in your tip image)
+        # 1. PROGRESS BAR
         progress_value = (st.session_state.page_index + 1) / len(knowledge_df)
         st.progress(progress_value)
 
-        # 2. THE 5-COLUMN SOLUTION (Adjusted for Left-Alignment)
-        # Using [1, 1.5, 1, 4] puts the buttons close together on the left
-        c1, c2, c3, c4 = st.columns([1, 1.5, 1, 4], gap="small")
+        # 2. TIGHT COLUMNS [Small, Medium, Small, Large Spacer]
+        c1, c2, c3, c4 = st.columns([0.7, 1.0, 0.7, 4], gap="small")
         
         with c1:
-            # Disable button if on first page (Pro tip from your image)
             if st.button("⬅ PREV", disabled=st.session_state.page_index == 0):
                 st.session_state.page_index = max(0, st.session_state.page_index - 1)
                 st.rerun()
@@ -154,13 +155,12 @@ with tabs[0]:
         with c2:
             st.markdown(f"""
                 <div class="page-indicator">
-                    <small style='color:#555; font-size:0.6rem; text-transform: uppercase; line-height:1;'>PAGE</small>
-                    <span style='font-weight:bold; font-size:0.95rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
+                    <small style='color:#555; font-size:0.55rem; text-transform: uppercase; line-height:1;'>PAGE</small>
+                    <span style='font-weight:bold; font-size:0.9rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
                 </div>
             """, unsafe_allow_html=True)
         
         with c3:
-            # Disable button if on last page (Pro tip from your image)
             if st.button("NEXT ➡", disabled=st.session_state.page_index == len(knowledge_df) - 1):
                 st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
                 st.rerun()
