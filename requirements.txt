@@ -12,3 +12,4 @@ indic-transliteration
 google-generativeai
 wikipedia
 plotly
+datetime
