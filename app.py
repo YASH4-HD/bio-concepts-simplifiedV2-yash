@@ -112,38 +112,40 @@ with tabs[0]:
                 st.info("No diagram available.")
 
 # =========================
-# TAB 2: 10 POINTS
+# TAB 2: 10 POINTS (FIXED DOWNLOAD BUTTON)
 # =========================
 with tabs[1]:
     st.header("🧠 10 Key Exam Points")
-    if not knowledge_df.empty:
-        row = knowledge_df.iloc[st.session_state.page_index]
-        pts = row.get("Ten_Points", "")
-        if pd.isna(pts) or str(pts).strip() == "":
-            st.info("No points available for this topic.")
+    
+    # Check if a topic is selected (from your CSV selection)
+    if 'row' in locals() or 'row' in globals():
+        pts = row.get('10_Points', '')
+        if pts:
+            # Display the points
+            st.write(pts)
+            
+            # --- DOWNLOAD AND CITATION SECTION ---
+            st.divider()
+            col_cite, col_dl = st.columns(2)
+            
+            with col_cite:
+                if st.button("📋 Generate Citation"):
+                    citation = f"Source: Bio-Verify 2026, Topic: {row.get('Topic')}, Date: {datetime.date.today()}"
+                    st.code(citation, language="text")
+            
+            with col_dl:
+                # This creates the download button for the 10 points
+                st.download_button(
+                    label="📥 Download Study Notes",
+                    data=pts,
+                    file_name=f"{row.get('Topic', 'Bio_Notes')}.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
         else:
-            for p in str(pts).split("\n"):
-                if p.strip(): st.write(f"• {p.strip()}")
+            st.warning("Please select a topic in the 'Reader' tab first to see points.")
     else:
-        st.info("Knowledge base is empty.")
- # --- ADD THIS AT THE BOTTOM OF TAB 2 ---
-        st.divider()
-        col_cite, col_dl = st.columns(2)
-        
-        with col_cite:
-            if st.button("📋 Generate Citation"):
-                citation = f"Source: Bio-Tech Smart Textbook, Topic: {row.get('Topic')}, Accessed: {datetime.date.today()}"
-                st.code(citation, language="text")
-        
-        with col_dl:
-            # This creates a simple text file of the 10 points
-            study_notes = f"TOPIC: {row.get('Topic')}\n\nNOTES:\n{pts}"
-            st.download_button(
-                label="📥 Download Study Notes",
-                data=study_notes,
-                file_name=f"{row.get('Topic')}_Notes.txt",
-                mime="text/plain"
-            )
+        st.warning("Please select a topic in the 'Reader' tab first.")
 # =========================
 # TAB 3: DNA LAB
 # =========================
