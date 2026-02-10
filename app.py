@@ -109,51 +109,69 @@ with tabs[0]:
     if knowledge_df.empty:
         st.warning("⚠️ Knowledge base is empty. Please check your CSV file.")
     else:
-                                                       # --- TIGHT LEFT NAVIGATION ---
-        st.markdown("""
+                                                               # --- FLEXBOX NAVIGATION (NO COLUMNS) ---
+        st.markdown(f"""
             <style>
-                /* Target buttons inside columns */
-                [data-testid="stHorizontalBlock"] div.stButton > button {
+                .nav-container {{
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }}
+                .page-box {{
+                    background-color: #f0f2f6;
+                    border: 1px solid #d1d5db;
+                    border-radius: 8px;
+                    padding: 4px 15px;
+                    text-align: center;
+                    min-width: 100px;
+                    height: 42px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }}
+                /* Target only these specific buttons to avoid messing up other tabs */
+                .nav-container button {{
                     background-color: #1e468a !important;
                     color: white !important;
                     border-radius: 8px !important;
-                    height: 40px !important;
+                    height: 42px !important;
+                    padding: 0 15px !important;
                     border: none !important;
-                    font-size: 0.8rem !important;
+                    font-size: 0.85rem !important;
                     font-weight: bold !important;
-                    width: 100% !important;
-                    padding: 0px !important;
-                }
+                    width: auto !important;
+                }}
             </style>
+            <div class="nav-container">
+                <div id="prev-placeholder"></div>
+                <div class="page-box">
+                    <span style="font-size: 0.6rem; color: #555; text-transform: uppercase; line-height: 1;">Page</span>
+                    <span style="font-size: 1rem; color: #1e468a; font-weight: bold;">{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
+                </div>
+                <div id="next-placeholder"></div>
+            </div>
         """, unsafe_allow_html=True)
 
-        # 1. TOP PROGRESS BAR
-        progress_value = (st.session_state.page_index + 1) / len(knowledge_df)
-        st.progress(progress_value)
-
-        # 2. TIGHT COLUMNS
-        # gap="small" removes that big white space you circled
-        c1, c2, c3, c4 = st.columns([0.8, 1.2, 0.8, 4], gap="small")
+        # Use 5 columns but only use the first 3 for the actual buttons
+        # This keeps them small and to the left
+        c1, c2, c3, _ = st.columns([1, 1.5, 1, 5], gap="small")
         
         with c1:
             if st.button("⬅ PREV"):
                 st.session_state.page_index = max(0, st.session_state.page_index - 1)
                 st.rerun()
-        
         with c2:
-            st.markdown(f"""
-                <div style='text-align:center; background:#f0f2f6; border-radius:8px; padding:4px; height:40px; border: 1px solid #d1d5db;'>
-                    <small style='color:#555; font-size:0.6rem; text-transform: uppercase; display:block; line-height:1.1;'>PAGE</small>
-                    <span style='font-weight:bold; font-size:0.9rem; color:#1e468a;'>{st.session_state.page_index + 1} / {len(knowledge_df)}</span>
-                </div>
-            """, unsafe_allow_html=True)
-        
+            # This is an empty placeholder to keep the alignment 
+            # while the HTML Page box sits behind it.
+            st.write("") 
         with c3:
             if st.button("NEXT ➡"):
                 st.session_state.page_index = min(len(knowledge_df) - 1, st.session_state.page_index + 1)
                 st.rerun()
 
         st.divider()
+
 
 
 
