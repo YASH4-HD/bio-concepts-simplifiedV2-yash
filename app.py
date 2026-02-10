@@ -21,7 +21,8 @@ with st.sidebar:
     st.title("🛡️ Bio-Verify 2026")
     
     # This is the fix:
-    current_date = datetime.date.today().strftime("%d %b %Y").upper()
+    auto_date = datetime.date.today().strftime("%d %b %Y").upper()
+
     st.write(f"📅 **{current_date}**")
     
     st.divider()
