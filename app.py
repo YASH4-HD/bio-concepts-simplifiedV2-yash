@@ -22,7 +22,18 @@ with st.sidebar:
     st.success("✅ Live API Connection: Active")
     st.info("Verified Data Sources: NCBI, Wikipedia, Google")
     st.divider()
-
+ # --- PROFILE CARD (Image 3 Style) ---
+    st.markdown("""
+        <div style="background-color: #1e468a; padding: 20px; border-radius: 15px; text-align: center; color: white;">
+            <h3 style="margin: 0; color: white;">Yashwant Nama</h3>
+            <p style="margin: 5px 0; font-size: 0.9rem; opacity: 0.8;">Developer & Researcher</p>
+            <p style="font-weight: bold; font-size: 1rem;">Bio-Informatics & Genetics</p>
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🧬 Genomics</span>
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🕸️ Networks</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 # =========================
 # OCR INITIALIZATION
 # =========================
