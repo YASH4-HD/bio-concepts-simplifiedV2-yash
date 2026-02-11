@@ -830,10 +830,12 @@ with tabs[8]:
         
         # DATABASE LOGIC (C. elegans focus for NCBS)
         pdb_data = {
+            "1BNA": {"chains": "2", "res": "24", "type": "DNA B-Form", "helix": 0.0, "sheet": 0.0},
             "1A8M": {"chains": "4", "res": "574", "type": "Hemoglobin", "helix": 0.72, "sheet": 0.12},
             "1WBD": {"chains": "1", "res": "450", "type": "C. elegans Myosin", "helix": 0.65, "sheet": 0.15},
-            "2SPY": {"chains": "2", "res": "280", "type": "Spectrin (Force Sensor)", "helix": 0.88, "sheet": 0.05}
+            "2SPY": {"chains": "2", "res": "280", "type": "Spectrin (NCBS Model)", "helix": 0.88, "sheet": 0.05}
         }
+
         stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 0.5, "sheet": 0.2})
 
         with col_side:
