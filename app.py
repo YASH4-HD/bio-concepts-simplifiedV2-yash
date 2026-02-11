@@ -522,7 +522,7 @@ with tabs[4]:
 # =========================
 # TAB 5: GLOBAL BIO-SEARCH
 # =========================
-with tabs[4]:
+with tabs[5]:
     st.header("🌐 Global Bio-Intelligence")
     st.caption("Search results are now matched for accuracy (Google-style logic)")
     
@@ -598,7 +598,7 @@ with tabs[4]:
 # =========================
 # TAB 6: HINDI HELPER
 # =========================
-with tabs[5]:
+with tabs[6]:
     st.header("🇮🇳 Hindi Helper")
     txt = st.text_area("Paste English text to translate to Hindi:")
     if st.button("Translate"):
@@ -611,7 +611,7 @@ with tabs[5]:
 # ==========================================
 # TAB 7: SEQUENCE ANALYZER
 # ==========================================
-with tabs[6]:
+with tabs[7]:
     st.header("🧬 Advanced Molecular Suite")
     raw_seq = st.text_area("Paste DNA Sequence:", "ATGGCCATTGTAATGGGCCGCTGAAAGGGTACCCGATAG", key="dna_input_area").upper().strip()
     
