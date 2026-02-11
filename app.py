@@ -84,61 +84,50 @@ def inject_modern_design():
 inject_modern_design()
 
 # =========================
-# SIDEBAR: BIO-VERIFY PANEL
+# 3. SIDEBAR: BIO-VERIFY & REPORT
 # =========================
 with st.sidebar:
-
-    # Title
     st.title("🛡️ Bio-Verify 2026")
-
-    # --- INDIA TIME (IST) ---
     ist = pytz.timezone("Asia/Kolkata")
     today_dt = datetime.datetime.now(ist)
-    today_date = today_dt.date()
-
-    # Display current date
-    today_auto = today_dt.strftime("%d %b %Y")
-    st.subheader(f"📅 {today_auto.upper()}")
-
+    st.subheader(f"📅 {today_dt.strftime('%d %b %Y').upper()}")
+    
     st.divider()
-
-    # --- EXAM DATES ---
-    EXAMS = {
-        "CSIR NET JUNE": datetime.date(2026, 6, 1),
-        "GATE 2027": datetime.date(2027, 2, 2),
-    }
-
-    st.subheader("📆 Exam Countdown")
-
+    EXAMS = {"CSIR NET JUNE": datetime.date(2026, 6, 1), "GATE 2027": datetime.date(2027, 2, 2)}
     for exam, exam_date in EXAMS.items():
-        days_left = (exam_date - today_date).days
-
-        if days_left > 0:
-            st.info(f"**{exam}**: {days_left} days left")
-        elif days_left == 0:
-            st.warning(f"**{exam}**: Exam Today!")
-        else:
-            st.error(f"**{exam}**: Exam completed")
-
+        days_left = (exam_date - today_dt.date()).days
+        if days_left > 0: st.info(f"**{exam}**: {days_left} days left")
+    
     st.divider()
-
-    # --- STATUS BADGES ---
-    st.success("✅ Live API Connection: Active")
-    st.info("Verified Data Sources: NCBI, Wikipedia, Google")
-
-    st.divider()
- # --- PROFILE CARD (Image 3 Style) ---
+    st.success("✅ API: Active | Verified Sources")
+    
+    # Profile Card
     st.markdown("""
-        <div style="background-color: #1e468a; padding: 20px; border-radius: 15px; text-align: center; color: white;">
-            <h3 style="margin: 0; color: white;">Yashwant Nama</h3>
-            <p style="margin: 5px 0; font-size: 0.9rem; opacity: 0.8;">Developer & Researcher</p>
-            <p style="font-weight: bold; font-size: 1rem;">Bio-Informatics & Genetics</p>
-            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🧬 Genomics</span>
-                <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🕸️ Networks</span>
+        <div style="background: rgba(30, 70, 138, 0.4); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #1e468a;">
+            <h3 style="margin:0; color:white;">Yashwant Nama</h3>
+            <p style="font-size:0.9rem; opacity:0.8;">Developer & Researcher</p>
+            <div style="display: flex; justify-content: center; gap: 5px; margin-top: 10px;">
+                <span style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 10px; font-size:0.7rem;">🧬 Genomics</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 10px; font-size:0.7rem;">🕸️ Networks</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+    st.divider()
+    st.header("📋 My Research Report")
+    if 'report_list' in st.session_state and st.session_state['report_list']:
+        for idx, item in enumerate(st.session_state['report_list']):
+            st.write(f"{idx+1}. {item['Topic']}")
+        
+        full_report = "BIO-RESEARCH REPORT\n" + "="*20 + "\n"
+        for item in st.session_state['report_list']:
+            full_report += f"TOPIC: {item['Topic']}\n{item['Notes']}\n\n"
+            
+        st.download_button("📥 Download Report", full_report, "Bio_Report.txt", use_container_width=True)
+        if st.button("🗑️ Clear Report"):
+            st.session_state.report_list = []; st.rerun()
+    else:
+        st.info("Report is empty.")
 # =========================
 # OCR INITIALIZATION
 # =========================
