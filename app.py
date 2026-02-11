@@ -770,10 +770,11 @@ with tabs[8]:
     col_main, col_side = st.columns([3, 1])
     
     with col_main:
-        # Toggle Surface State
-        if 'show_surf' not in st.session_state: st.session_state.show_surf = False
+        # Toggle Surface State initialization
+        if 'show_surf' not in st.session_state: 
+            st.session_state.show_surf = False
         
-        # RENDER
+        # RENDER THE PROTEIN
         render_advanced_protein(
             target_pdb, 
             style_choice, 
@@ -784,49 +785,27 @@ with tabs[8]:
             dark_mode=dark_mode
         )
         
-        # Bottom Buttons
-        c1, c2, c3 = st.columns(3)
-        if c1.button("🧊 Toggle Surface", use_container_width=True):
-            st.session_state.show_surf = not st.session_state.show_surf
-            st.rerun()
-        # ... (rest of your buttons)
-        
-        # Action Buttons
+        # --- QUICK ACTIONS SECTION ---
         st.write("### Quick Actions")
-        c1, c2, c3 = st.columns(3)
-        if c1.button("🧊 Toggle Surface", use_container_width=True):
-            st.session_state.show_surf = not st.session_state.show_surf
-            st.rerun()
-        if c2.button("🎯 Highlight Active Site", use_container_width=True):
-            st.toast("Analyzing Binding Pockets...")
-        if c3.button("🧪 Predict Properties", use_container_width=True):
-            st.info("Calculated MW: 5.8 kDa | Isoelectric Point: 5.3")
-
-    with col_side:
-        st.subheader("Analysis Log")
-        c_metric1, c_metric2 = st.columns(2)
-        with c_metric1:
-            st.metric("Chains", "4" if "1A8M" in target_pdb.upper() else "1")
-        with c_metric2:
-            st.metric("Residues", "574" if "1A8M" in target_pdb.upper() else "141")
-        st.markdown("---")
-        if water_flag:
-            st.warning("⚠️ Water (HOH) suppressed.")
-        else:
-            st.info("💧 Solvent visible.")
-            
-        if st.session_state.show_surf:
-            st.success("✨ Surface Overlay Active")
-
-        st.markdown("**Structural Integrity**")
-        st.progress(98)
-        st.caption("Resolution: 1.5Å | R-Free: 0.18")
         
-        st.markdown("---")
-        st.write("**History**")
-        st.caption(f"• Loaded {target_pdb}")
-        if water_flag: st.caption("• Filtered Solvent")
-        if not spin_flag: st.caption("• Rotation Halted")
+        # Define columns for buttons
+        btn_col1, btn_col2, btn_col3 = st.columns(3)
+        
+        with btn_col1:
+            # Added unique key="btn_surface"
+            if st.button("🧊 Toggle Surface", use_container_width=True, key="btn_surface"):
+                st.session_state.show_surf = not st.session_state.show_surf
+                st.rerun()
+        
+        with btn_col2:
+            # Added unique key="btn_active_site"
+            if st.button("🎯 Highlight Active Site", use_container_width=True, key="btn_active_site"):
+                st.toast(f"Analyzing binding pockets for {target_pdb}...")
+        
+        with btn_col3:
+            # Added unique key="btn_predict"
+            if st.button("🧪 Predict Properties", use_container_width=True, key="btn_predict"):
+                st.info("MW: 64.5 kDa | pI: 6.8 (Estimated)")
 
     # 4. Footer info
     st.caption("Bio-Nexus Engine v2.4 | Powered by py3Dmol & OpenPDB")
