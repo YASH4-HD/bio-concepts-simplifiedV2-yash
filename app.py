@@ -10,49 +10,45 @@ import plotly.express as px
 import datetime
 import pytz
 # ==========================================
-# 1. MODERN LIGHT DESIGN & ANIMATION
+# 1. AUTO-ADAPTING UI (MOBILE + DESKTOP)
 # ==========================================
 st.set_page_config(page_title="Bio-Tech Smart Textbook", layout="wide")
 
-def inject_modern_design():
+def inject_responsive_design():
     st.markdown("""
     <style>
-    /* Clean Light Background with subtle blue tint */
+    /* 1. BASE THEME (Medical White) */
     .stApp {
         background: linear-gradient(180deg, #f8faff 0%, #eef2f7 100%);
         color: #1e293b;
     }
-    
-    /* Floating Bio-Particles (Medical Blue) */
-    .particle {
-      color: rgba(30, 70, 138, 0.1); /* Subtle blue particles */
-      font-size: 24px;
-      position: fixed;
-      top: -10%;
-      z-index: 0;
-      user-select: none;
-      pointer-events: none;
-      animation: fall 15s linear infinite, shake 4s ease-in-out infinite;
+
+    /* 2. DESKTOP ONLY: Floating Particles */
+    @media (min-width: 768px) {
+        .particle {
+          color: rgba(30, 70, 138, 0.1);
+          font-size: 24px;
+          position: fixed;
+          top: -10%;
+          z-index: 0;
+          animation: fall 15s linear infinite, shake 4s ease-in-out infinite;
+        }
     }
+    /* MOBILE ONLY: Hide particles and optimize text */
+    @media (max-width: 767px) {
+        .particle { display: none; }
+        p, li { font-size: 1.15rem !important; line-height: 1.6 !important; }
+        .stButton button { width: 100% !important; height: 50px !important; margin-bottom: 10px !important; }
+        h1 { font-size: 1.7rem !important; }
+    }
+
     @keyframes fall { 0% { top: -10%; } 100% { top: 100%; } }
     @keyframes shake { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(30px); } }
-    
-    .p1 { left: 5%; animation-delay: 0s; }
-    .p2 { left: 25%; animation-delay: 5s; }
-    .p3 { left: 45%; animation-delay: 2s; }
-    .p4 { left: 70%; animation-delay: 8s; }
-    .p5 { left: 90%; animation-delay: 3s; }
 
-    /* Clean Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff !important;
-        border-right: 1px solid #e2e8f0;
-    }
-    
-    /* White Card for Content (Shadow instead of Dark Blur) */
+    /* 3. CONTENT CARDS */
     .bio-card {
         background: #ffffff;
-        padding: 25px;
+        padding: 20px;
         border-radius: 12px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -60,7 +56,7 @@ def inject_modern_design():
         color: #1e293b;
     }
 
-    /* Style for the DNA Tags (Light Theme Colors) */
+    /* 4. BIO TAGS */
     .bio-tag {
         background-color: #e0f2fe;
         color: #0369a1;
@@ -69,20 +65,21 @@ def inject_modern_design():
         margin-right: 8px;
         font-size: 0.8rem;
         font-weight: bold;
+        display: inline-block;
+        margin-top: 5px;
         border: 1px solid #bae6fd;
     }
     </style>
-    
+
     <div aria-hidden="true">
-      <div class="particle p1">🧬</div>
-      <div class="particle p2">●</div>
-      <div class="particle p3">○</div>
-      <div class="particle p4">🧬</div>
-      <div class="particle p5">●</div>
+      <div class="particle" style="left:10%; animation-delay:0s;">🧬</div>
+      <div class="particle" style="left:35%; animation-delay:5s;">●</div>
+      <div class="particle" style="left:60%; animation-delay:2s;">○</div>
+      <div class="particle" style="left:85%; animation-delay:8s;">🧬</div>
     </div>
     """, unsafe_allow_html=True)
 
-inject_modern_design()
+inject_responsive_design()
 
 # =========================
 # SIDEBAR: BIO-VERIFY PANEL
