@@ -859,7 +859,7 @@ with tabs[8]:
                 </div>
             ''', unsafe_allow_html=True)
 
-            st.markdown("### 📡 Intelligence")
+            st.markdown("### 📡 Nexus Intelligence")
             st.caption(f"Classification: {stats['type']}")
             
             m1, m2 = st.columns(2)
