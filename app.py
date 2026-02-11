@@ -865,11 +865,11 @@ with tabs[8]:
             st.divider()
             
             st.markdown("### Structure Analysis")
-            st.progress(stats['helix'], text=f"Alpha Helix: {int(stats['helix']*100)}%")
             st.progress(stats['sheet'], text=f"Beta Sheets: {int(stats['sheet']*100)}%")
-            
+            st.markdown("<br>", unsafe_allow_html=True) # Adds a small gap
             if target_pdb.upper() in ["1WBD", "2SPY"]:
                 st.success("✅ NCBS Priority Model")
+
 
         with col_main:
             if 'show_surf' not in st.session_state: 
