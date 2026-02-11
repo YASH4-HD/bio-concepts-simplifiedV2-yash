@@ -742,7 +742,19 @@ with tabs[8]:
         
         # Here we call your existing 3Dmol function
         # Make sure to pass the 'style' and 'color_scheme' variables to it
-        show_3d_structure(target_pdb, style=style, color=color_scheme)
+       def show_3d_structure(pdb_id, style='cartoon', color='spectrum'):
+    # 1. Initialize the viewer
+    view = py3Dmol.view(query=f'pdb:{pdb_id}')
+    
+    # 2. THIS IS THE LINE TO ADD/UPDATE:
+    # It uses the variables from the dropdowns
+    view.setStyle({style: {'color': color}})
+    
+    view.zoomTo()
+    view.spin(True) # Optional: makes it spin like your reference
+    
+    # 3. Render in Streamlit
+    showmol(view, height=500, width=800)
         
         st.caption(f"Showing: {target_pdb}_MODIFIED")
         st.button(f"📥 Download {target_pdb}_CLEAN.pdb", use_container_width=True)
