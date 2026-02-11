@@ -716,67 +716,80 @@ with tabs[7]:
         else:
             st.success("✅ Balanced GC Content: Normal distribution.") 
 # ==========================================
-# TAB 8: 🔬 BIO-NEXUS STRUCTURE ENGINE (Final Polish)
+# TAB 8: 🔬 BIO-NEXUS STRUCTURE ENGINE (Night Vision)
 # ==========================================
 with tabs[8]:
     from stmol import showmol
     import py3Dmol
 
-    # --- ADVANCED COMMAND LOGIC ---
-    def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False, show_surface=False, spin=True):
+    # --- ADVANCED ENGINE ---
+    def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False, show_surface=False, spin=True, dark_mode=True):
         view = py3Dmol.view(query=f'pdb:{pdb_id}')
         
-        # 1. Style & Color
+        # 1. Background Logic
+        bg_color = '#0e1117' if dark_mode else 'white' # Dark grey to match Streamlit or pure white
+        view.setBackgroundColor(bg_color)
+        
+        # 2. Style & Atoms
         view.setStyle({style_type: {'color': color_type}})
         
-        # 2. Water Removal Logic
-        if remove_water:
-            view.removeSelection({'resn': 'HOH'}) # Specifically removes water residues
+        # 3. PRO FEATURE: Add Outline for better depth
+        view.addStyle({'outline': {'color': 'black', 'width': 0.1}})
         
-        # 3. Surface Logic (For the "Show Surface" button)
+        if remove_water:
+            view.removeSelection({'resn': 'HOH'})
+        
         if show_surface:
-           view.addSurface(py3Dmol.VDW, {'opacity': 0.5, 'colorscheme': color_type})
+            view.addSurface(py3Dmol.VDW, {'opacity': 0.4, 'colorscheme': color_type})
         
         view.zoomTo()
         view.spin(spin)
-        # Increased width to 800 to fill the screen better
-        return showmol(view, height=500, width=800)
+        return showmol(view, height=550, width=800) # Slightly taller for better view
 
     # Header
     st.markdown("<h2 style='text-align: center; color: #00d4ff;'>🧬 Bio-Nexus Structure Engine</h2>", unsafe_allow_html=True)
     
-    # 1. Inputs
-    col_input, col_ctrl1, col_ctrl2 = st.columns([2, 1, 1])
+    # 1. Controls Row
+    col_input, col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1, 1])
     with col_input:
-        target_pdb = st.text_input("Target PDB ID", value="4ins", key="nexus_pdb")
+        target_pdb = st.text_input("Target PDB ID", value="1A8M", key="nexus_pdb")
     with col_ctrl1:
-        style_choice = st.selectbox("Render Mode", ["cartoon", "stick", "sphere", "line"], index=0)
+        style_choice = st.selectbox("Render Mode", ["cartoon", "stick", "sphere", "line"])
     with col_ctrl2:
-        color_choice = st.selectbox("Color Palette", ["spectrum", "chain", "element", "residue"], index=0)
+        color_choice = st.selectbox("Color Palette", ["spectrum", "chain", "element", "residue"])
+    with col_ctrl3:
+        # THE TOGGLE WE BOTH WANTED
+        dark_mode = st.toggle("Night Vision", value=True, help="Switch between Lab White and Deep Scan Mode")
 
     # 2. Command Processing
-    chat_query = st.text_input("💬 Input Command (e.g., 'REMOVE WATER' or 'STOP SPIN')", key="nexus_chat").upper()
-    
-    # Logic flags based on chat
-    water_flag = "REMOVE WATER" in chat_query or "HIDE WATER" in chat_query
-    spin_flag = "STOP SPIN" not in chat_query and "SPIN OFF" not in chat_query
-    
-    # 3. Main Interface
+    chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'REMOVE WATER' or 'STOP SPIN'", key="nexus_chat").upper()
+    water_flag = "REMOVE WATER" in chat_query
+    spin_flag = "STOP" not in chat_query
+
+    # 3. Main Layout
     col_main, col_side = st.columns([3, 1])
     
     with col_main:
-        # We use a session state for the surface to make the button toggleable
+        # Toggle Surface State
         if 'show_surf' not in st.session_state: st.session_state.show_surf = False
         
-        # Render the model
+        # RENDER
         render_advanced_protein(
             target_pdb, 
             style_choice, 
             color_choice, 
             remove_water=water_flag, 
             show_surface=st.session_state.show_surf,
-            spin=spin_flag
+            spin=spin_flag,
+            dark_mode=dark_mode
         )
+        
+        # Bottom Buttons
+        c1, c2, c3 = st.columns(3)
+        if c1.button("🧊 Toggle Surface", use_container_width=True):
+            st.session_state.show_surf = not st.session_state.show_surf
+            st.rerun()
+        # ... (rest of your buttons)
         
         # Action Buttons
         st.write("### Quick Actions")
