@@ -807,11 +807,12 @@ with tabs[8]:
         st.subheader("📡 Nexus Intelligence")
         st.caption(f"Classification: {stats['type']}")
         
-        m1, m2 = st.columns(2)
+               m1, m2 = st.columns(2)
         with m1:
-        st.metric("Chains", stats['chains'])
+            st.metric("Chains", stats['chains'])  # Added 4 spaces here
         with m2:
-        st.metric("Residues", stats['res'])
+            st.metric("Residues", stats['res'])   # Added 4 spaces here
+
         
         st.markdown("<hr style='border: 1px solid #00d4ff;'>", unsafe_allow_html=True)
         st.write("**Secondary Structure**")
