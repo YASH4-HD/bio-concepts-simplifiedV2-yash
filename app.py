@@ -888,7 +888,8 @@ with tabs[8]:
             st.progress(stats['sheet'], text=f"Beta Sheets: {int(stats['sheet']*100)}%")
             st.markdown("<br>", unsafe_allow_html=True) # Adds a small gap
             if target_pdb.upper() in ["1WBD", "2SPY"]:
-            st.success("**✅ NCBS Priority Model**  \n*Example Mechanobiology Workflow (C. elegans)*")
+                st.success("**✅ NCBS Priority Model** \n\n*Example Mechanobiology Workflow (C. elegans)*")
+
 
 
 
