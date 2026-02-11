@@ -716,132 +716,90 @@ with tabs[7]:
         else:
             st.success("✅ Balanced GC Content: Normal distribution.") 
 # ==========================================
-# TAB 8: 🔬 BIO-NEXUS STRUCTURE ENGINE (Night Vision)
+# TAB 8: 🔬 BIO-NEXUS STRUCTURE ENGINE
 # ==========================================
 with tabs[8]:
     from stmol import showmol
     import py3Dmol
 
-    # --- ADVANCED ENGINE ---
+    # 1. ADVANCED RENDER ENGINE
     def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False, show_surface=False, spin=True, dark_mode=True):
         view = py3Dmol.view(query=f'pdb:{pdb_id}')
-        
-        # 1. Background Logic
-        bg_color = '#0e1117' if dark_mode else 'white' # Dark grey to match Streamlit or pure white
+        bg_color = '#0e1117' if dark_mode else 'white'
         view.setBackgroundColor(bg_color)
-        
-        # 2. Style & Atoms
         view.setStyle({style_type: {'color': color_type}})
-        
-        # 3. PRO FEATURE: Add Outline for better depth
         view.addStyle({'outline': {'color': 'black', 'width': 0.1}})
-        
         if remove_water:
             view.removeSelection({'resn': 'HOH'})
-        
         if show_surface:
             view.addSurface(py3Dmol.VDW, {'opacity': 0.4, 'colorscheme': color_type})
-        
         view.zoomTo()
         view.spin(spin)
-        return showmol(view, height=550, width=800) # Slightly taller for better view
+        return showmol(view, height=550, width=800)
 
-    # Header
+    # 2. HEADER & CONTROLS
     st.markdown("<h2 style='text-align: center; color: #00d4ff;'>🧬 Bio-Nexus Structure Engine</h2>", unsafe_allow_html=True)
     
-    # 1. Controls Row
-    col_input, col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1, 1])
-    with col_input:
+    c_in, c_s, c_c, c_v = st.columns([2, 1, 1, 1])
+    with c_in:
         target_pdb = st.text_input("Target PDB ID", value="1A8M", key="nexus_pdb")
-    with col_ctrl1:
-        style_choice = st.selectbox("Render Mode", ["cartoon", "stick", "sphere", "line"])
-    with col_ctrl2:
-        color_choice = st.selectbox("Color Palette", ["spectrum", "chain", "element", "residue"])
-    with col_ctrl3:
-        # THE TOGGLE WE BOTH WANTED
-        dark_mode = st.toggle("Night Vision", value=True, help="Switch between Lab White and Deep Scan Mode")
+    with c_s:
+        style_choice = st.selectbox("Render Mode", ["cartoon", "stick", "sphere", "line"], key="nexus_style")
+    with c_c:
+        color_choice = st.selectbox("Color Palette", ["spectrum", "chain", "element", "residue"], key="nexus_color")
+    with c_v:
+        dark_mode = st.toggle("Night Vision", value=True, key="nexus_dark")
 
-    # 2. Command Processing
-    chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'REMOVE WATER' or 'STOP SPIN'", key="nexus_chat").upper()
+    chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'REMOVE WATER'", key="nexus_chat").upper()
     water_flag = "REMOVE WATER" in chat_query
     spin_flag = "STOP" not in chat_query
 
-    # 3. Main Layout
+    # 3. MAIN INTERFACE
     col_main, col_side = st.columns([3, 1])
     
     with col_main:
-        # Toggle Surface State initialization
         if 'show_surf' not in st.session_state: 
             st.session_state.show_surf = False
         
-        # RENDER THE PROTEIN
         render_advanced_protein(
-            target_pdb, 
-            style_choice, 
-            color_choice, 
-            remove_water=water_flag, 
-            show_surface=st.session_state.show_surf,
-            spin=spin_flag,
-            dark_mode=dark_mode
+            target_pdb, style_choice, color_choice, 
+            remove_water=water_flag, show_surface=st.session_state.show_surf,
+            spin=spin_flag, dark_mode=dark_mode
         )
         
-        # --- QUICK ACTIONS SECTION ---
         st.write("### Quick Actions")
-        
-        # Define columns for buttons
-        btn_col1, btn_col2, btn_col3 = st.columns(3)
-        
-        with btn_col1:
-            # Added unique key="btn_surface"
-            if st.button("🧊 Toggle Surface", use_container_width=True, key="btn_surface"):
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button("🧊 Toggle Surface", use_container_width=True, key="nexus_btn1"):
                 st.session_state.show_surf = not st.session_state.show_surf
                 st.rerun()
-        
-        with btn_col2:
-            # Added unique key="btn_active_site"
-            if st.button("🎯 Highlight Active Site", use_container_width=True, key="btn_active_site"):
-                st.toast(f"Analyzing binding pockets for {target_pdb}...")
-        
-        with btn_col3:
-            # Added unique key="btn_predict"
-            if st.button("🧪 Predict Properties", use_container_width=True, key="btn_predict"):
-                st.info("MW: 64.5 kDa | pI: 6.8 (Estimated)")
-        with col_side:
+        with b2:
+            if st.button("🎯 Highlight Active Site", use_container_width=True, key="nexus_btn2"):
+                st.toast("Scanning Binding Pockets...")
+        with b3:
+            if st.button("🧪 Predict Properties", use_container_width=True, key="nexus_btn3"):
+                st.info("MW: 64.5 kDa | pI: 6.8")
+
+    with col_side:
         st.markdown("<div style='background-color: #1e2130; padding: 15px; border-radius: 10px; border: 1px solid #00d4ff;'>", unsafe_allow_html=True)
         st.subheader("📡 Nexus Intelligence")
-        
-        # 1. Real-time Metrics
         m1, m2 = st.columns(2)
         with m1:
             st.metric("Chains", "4" if "1A8M" in target_pdb.upper() else "1")
         with m2:
             st.metric("Residues", "574" if "1A8M" in target_pdb.upper() else "141")
-            
         st.markdown("---")
-        
-        # 2. Structural Composition
         st.write("**Secondary Structure**")
-        st.caption("Alpha Helix")
-        st.progress(72)
-        st.caption("Beta Sheets")
-        st.progress(12)
-        
+        st.progress(72, text="Alpha Helix")
+        st.progress(12, text="Beta Sheets")
         st.markdown("---")
-        
-        # 3. Live Status Feed
         st.write("**Engine Status**")
-        if water_flag:
-            st.warning("⚠️ H2O Filter: ACTIVE")
-        else:
-            st.info("💧 Solvent: VISIBLE")
-            
-        if st.session_state.show_surf:
-            st.success("✨ Surface: RENDERED")
-            
-        # 4. Sequence Preview
-        with st.expander("🧬 View Sequence Map"):
+        if water_flag: st.warning("⚠️ H2O Filter: ACTIVE")
+        else: st.info("💧 Solvent: VISIBLE")
+        if st.session_state.show_surf: st.success("✨ Surface: RENDERED")
+        with st.expander("🧬 Sequence Map"):
             st.code("VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR", wrap_lines=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     # 4. Footer info
     st.caption("Bio-Nexus Engine v2.4 | Powered by py3Dmol & OpenPDB")
 # =========================
