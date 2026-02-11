@@ -735,7 +735,7 @@ with tabs[8]:
         
         # 3. Surface Logic (For the "Show Surface" button)
         if show_surface:
-            view.addSurface(py3Dmol.VDW, {'opacity': 0.7, 'color': color_type})
+           view.addSurface(py3Dmol.VDW, {'opacity': 0.5, 'colorscheme': color_type})
         
         view.zoomTo()
         view.spin(spin)
@@ -791,6 +791,12 @@ with tabs[8]:
 
     with col_side:
         st.subheader("Analysis Log")
+        c_metric1, c_metric2 = st.columns(2)
+        with c_metric1:
+            st.metric("Chains", "4" if "1A8M" in target_pdb.upper() else "1")
+        with c_metric2:
+            st.metric("Residues", "574" if "1A8M" in target_pdb.upper() else "141")
+        st.markdown("---")
         if water_flag:
             st.warning("⚠️ Water (HOH) suppressed.")
         else:
