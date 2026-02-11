@@ -798,10 +798,25 @@ with tabs[8]:
             }
             stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 50, "sheet": 20})
             
-            # 2. START THE GLOWING CONTAINER
-            st.markdown("""
+            # This starts the glowing box
+        st.markdown("""
             <div style='background-color: #0e1117; padding: 20px; border-radius: 15px; border: 2px solid #00d4ff; box-shadow: 0px 0px 15px #00d4ff; color: white;'>
-            """, unsafe_allow_html=True)
+                <h3 style='margin:0;'>📡 Nexus Intelligence</h3>
+                <p style='color: #00d4ff; font-size: 0.8em;'>System Online</p>
+        """, unsafe_allow_html=True)
+
+        # These must be INDENTED to stay inside the 'with col_side'
+        st.write(f"**Classification:** {stats['type']}")
+        
+        c1, c2 = st.columns(2)
+        c1.metric("Chains", stats['chains'])
+        c2.metric("Residues", stats['res'])
+        
+        st.progress(stats['helix']/100, text=f"Helix: {stats['helix']}%")
+        st.progress(stats['sheet']/100, text=f"Sheet: {stats['sheet']}%")
+
+        # This closes the glowing box
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.subheader("📡 Nexus Intelligence")
         st.caption(f"Classification: {stats['type']}")
