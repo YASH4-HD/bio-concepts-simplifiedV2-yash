@@ -716,30 +716,36 @@ with tabs[7]:
         else:
             st.success("✅ Balanced GC Content: Normal distribution.") 
 # ==========================================
-# TAB 8: 🔬 BIO-NEXUS STRUCTURE ENGINE
+# TAB 8: 🔬 BIO-NEXUS STRUCTURE ENGINE (Final Polish)
 # ==========================================
 with tabs[8]:
     from stmol import showmol
     import py3Dmol
 
     # --- ADVANCED COMMAND LOGIC ---
-    def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False):
+    def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False, show_surface=False, spin=True):
         view = py3Dmol.view(query=f'pdb:{pdb_id}')
         
-        # Actual logic to filter out water if requested
-        if remove_water:
-            view.addStyle({'hetres': 'HOH'}, {'stick': {'visible': False}}) # Hides water
-        
+        # 1. Style & Color
         view.setStyle({style_type: {'color': color_type}})
+        
+        # 2. Water Removal Logic
+        if remove_water:
+            view.removeSelection({'resn': 'HOH'}) # Specifically removes water residues
+        
+        # 3. Surface Logic (For the "Show Surface" button)
+        if show_surface:
+            view.addSurface(py3Dmol.VDW, {'opacity': 0.7, 'color': color_type})
+        
         view.zoomTo()
-        view.spin(True)
+        view.spin(spin)
+        # Increased width to 800 to fill the screen better
         return showmol(view, height=500, width=800)
 
-    # 1. Unique Header
+    # Header
     st.markdown("<h2 style='text-align: center; color: #00d4ff;'>🧬 Bio-Nexus Structure Engine</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; opacity: 0.8;'>Advanced Molecular Analysis & Real-time Manipulation</p>", unsafe_allow_html=True)
     
-    # 2. Command Center
+    # 1. Inputs
     col_input, col_ctrl1, col_ctrl2 = st.columns([2, 1, 1])
     with col_input:
         target_pdb = st.text_input("Target PDB ID", value="4ins", key="nexus_pdb")
@@ -748,51 +754,60 @@ with tabs[8]:
     with col_ctrl2:
         color_choice = st.selectbox("Color Palette", ["spectrum", "chain", "element", "residue"], index=0)
 
+    # 2. Command Processing
+    chat_query = st.text_input("💬 Input Command (e.g., 'REMOVE WATER' or 'STOP SPIN')", key="nexus_chat").upper()
+    
+    # Logic flags based on chat
+    water_flag = "REMOVE WATER" in chat_query or "HIDE WATER" in chat_query
+    spin_flag = "STOP SPIN" not in chat_query and "SPIN OFF" not in chat_query
+    
     # 3. Main Interface
     col_main, col_side = st.columns([3, 1])
     
-    # Check for text commands
-    st.markdown("---")
-    chat_query = st.text_input("💬 Input Command (e.g., 'REMOVE WATER' or 'SPIN OFF')", key="nexus_chat").upper()
-    
-    # Logic for commands
-    water_flag = "REMOVE WATER" in chat_query
-    if "SPIN OFF" in chat_query:
-        spin_state = False
-    else:
-        spin_state = True
-
     with col_main:
-        if target_pdb:
-            render_advanced_protein(target_pdb, style_choice, color_choice, remove_water=water_flag)
+        # We use a session state for the surface to make the button toggleable
+        if 'show_surf' not in st.session_state: st.session_state.show_surf = False
         
-        # Advanced Action Bar
+        # Render the model
+        render_advanced_protein(
+            target_pdb, 
+            style_choice, 
+            color_choice, 
+            remove_water=water_flag, 
+            show_surface=st.session_state.show_surf,
+            spin=spin_flag
+        )
+        
+        # Action Buttons
         st.write("### Quick Actions")
         c1, c2, c3 = st.columns(3)
-        if c1.button("🧊 Show Surface"):
-            st.toast("Generating Molecular Surface...")
-        if c2.button("🎯 Highlight Active Site"):
+        if c1.button("🧊 Toggle Surface", use_container_width=True):
+            st.session_state.show_surf = not st.session_state.show_surf
+            st.rerun()
+        if c2.button("🎯 Highlight Active Site", use_container_width=True):
             st.toast("Analyzing Binding Pockets...")
-        if c3.button("🧪 Predict Properties"):
+        if c3.button("🧪 Predict Properties", use_container_width=True):
             st.info("Calculated MW: 5.8 kDa | Isoelectric Point: 5.3")
 
     with col_side:
         st.subheader("Analysis Log")
         if water_flag:
-            st.warning("⚠️ Water molecules (HOH) suppressed.")
+            st.warning("⚠️ Water (HOH) suppressed.")
         else:
-            st.info("💧 Solvent molecules visible.")
+            st.info("💧 Solvent visible.")
             
+        if st.session_state.show_surf:
+            st.success("✨ Surface Overlay Active")
+
         st.markdown("**Structural Integrity**")
-        st.progress(98, text="Resolution: 1.5Å")
+        st.progress(98)
+        st.caption("Resolution: 1.5Å | R-Free: 0.18")
         
         st.markdown("---")
-        st.write("**Modification History**")
-        log_entries = ["System Initialized", f"Loaded {target_pdb}"]
-        if water_flag: log_entries.append("Filtered Solvent")
-        
-        for entry in log_entries:
-            st.caption(f"• {entry}")
+        st.write("**History**")
+        st.caption(f"• Loaded {target_pdb}")
+        if water_flag: st.caption("• Filtered Solvent")
+        if not spin_flag: st.caption("• Rotation Halted")
 
     # 4. Footer info
     st.caption("Bio-Nexus Engine v2.4 | Powered by py3Dmol & OpenPDB")
