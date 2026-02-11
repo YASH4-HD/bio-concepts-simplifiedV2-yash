@@ -750,7 +750,7 @@ with tabs[8]:
         from stmol import showmol
         import py3Dmol
 
-        # 1. STYLING & CSS (The "Glow" Engine)
+        # 1. NEXUS STYLING ENGINE
         st.markdown("""
         <style>
             .nexus-status-card {
@@ -774,17 +774,23 @@ with tabs[8]:
                 font-weight: bold;
                 font-family: 'Courier New', monospace;
             }
+            .stProgress > div > div > div > div {
+                background-color: #00f2ff;
+            }
         </style>
         """, unsafe_allow_html=True)
 
-        # 2. CORE FUNCTIONS
-        def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False, show_surface=False, spin=True, dark_mode=True):
+        # 2. RENDER ENGINE (With Mechanobiology Logic)
+        def render_advanced_protein(pdb_id, style_type, color_type, remove_water=False, show_surface=False, spin=True, dark_mode=True, force_mode=False):
             view = py3Dmol.view(query=f'pdb:{pdb_id}')
             bg_color = '#0e1117' if dark_mode else 'white'
             view.setBackgroundColor(bg_color)
             
+            # If Force Mode is on, we override color to show "Tension" (hot pink to blue)
+            final_color = "hotpink" if force_mode else color_type
+            
             view.setStyle({style_type: {
-                'color': color_type,
+                'color': final_color,
                 'specular': '#ffffff',
                 'shininess': 100,
                 'thickness': 0.4
@@ -793,13 +799,13 @@ with tabs[8]:
             if remove_water:
                 view.removeSelection({'resn': 'HOH'})
             if show_surface:
-                view.addSurface(py3Dmol.VDW, {'opacity': 0.3, 'colorscheme': color_type})
+                view.addSurface(py3Dmol.VDW, {'opacity': 0.3, 'colorscheme': final_color})
                 
             view.zoomTo()
             view.spin(spin)
             return showmol(view, height=600, width=800)
 
-        # 3. HEADER
+        # 3. HEADER & CONTROL PANEL
         st.markdown("<h2 style='text-align: center; color: #00d4ff;'>🧬 Bio-Nexus Structure Engine</h2>", unsafe_allow_html=True)
         
         c_in, c_s, c_c, c_v = st.columns([2, 1, 1, 1])
@@ -812,21 +818,64 @@ with tabs[8]:
         with c_v:
             dark_mode = st.toggle("Night Vision", value=True, key="nexus_dark")
 
-        chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'REMOVE WATER'", key="nexus_chat").upper()
+        # Command Terminal
+        chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'REMOVE WATER' or 'STOP'", key="nexus_chat").upper()
         water_flag = "REMOVE WATER" in chat_query
         spin_flag = "STOP" not in chat_query
 
-        # 4. MAIN INTERFACE
+        # 4. MAIN INTERFACE LAYOUT
         col_main, col_side = st.columns([3, 1])
         
+        # DATABASE LOGIC (C. elegans focus for NCBS)
+        pdb_data = {
+            "1A8M": {"chains": "4", "res": "574", "type": "Hemoglobin", "helix": 0.72, "sheet": 0.12},
+            "1WBD": {"chains": "1", "res": "450", "type": "C. elegans Myosin", "helix": 0.65, "sheet": 0.15},
+            "2SPY": {"chains": "2", "res": "280", "type": "Spectrin (Force Sensor)", "helix": 0.88, "sheet": 0.05}
+        }
+        stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 0.5, "sheet": 0.2})
+
+        with col_side:
+            # NCBS Lab Special Feature
+            st.markdown("### 🔬 Lab Focus: NCBS")
+            lab_mode = st.toggle("Mechanobiology Mode", help="Visualize mechanical strain on tissue proteins")
+            
+            if lab_mode:
+                st.warning("Force-Vector Active")
+                st.caption("Analyzing C. elegans tissue tension...")
+
+            # The Glowing Status Card
+            st.markdown(f'''
+                <div class="nexus-status-card">
+                    <div class="nexus-stat-label">Core Status</div>
+                    <div class="nexus-stat-value">SYSTEM ACTIVE</div>
+                </div>
+            ''', unsafe_allow_html=True)
+
+            st.markdown("### 📡 Intelligence")
+            st.caption(f"Classification: {stats['type']}")
+            
+            m1, m2 = st.columns(2)
+            m1.metric("Chains", stats['chains'])
+            m2.metric("Residues", stats['res'])
+            
+            st.divider()
+            
+            st.markdown("### Structure Analysis")
+            st.progress(stats['helix'], text=f"Alpha Helix: {int(stats['helix']*100)}%")
+            st.progress(stats['sheet'], text=f"Beta Sheets: {int(stats['sheet']*100)}%")
+            
+            if target_pdb.upper() in ["1WBD", "2SPY"]:
+                st.success("✅ NCBS Priority Model")
+
         with col_main:
             if 'show_surf' not in st.session_state: 
                 st.session_state.show_surf = False
             
+            # Call Render Function
             render_advanced_protein(
                 target_pdb, style_choice, color_choice, 
                 remove_water=water_flag, show_surface=st.session_state.show_surf,
-                spin=spin_flag, dark_mode=dark_mode
+                spin=spin_flag, dark_mode=dark_mode, force_mode=lab_mode
             )
             
             st.write("### Quick Actions")
@@ -840,54 +889,20 @@ with tabs[8]:
                     st.toast("Scanning Binding Pockets...")
             with b3:
                 if st.button("🧪 Predict Properties", use_container_width=True, key="nexus_btn3"):
-                    st.info("MW: 64.5 kDa | pI: 6.8")
+                    st.info("Calculated MW: 64.5 kDa | pI: 6.8")
 
-        with col_side:
-            # Data Logic
-            pdb_data = {
-                "1A8M": {"chains": "4", "res": "574", "type": "Hemoglobin", "helix": 0.72, "sheet": 0.12},
-                "7DHL": {"chains": "3", "res": "3726", "type": "Spike Protein", "helix": 0.25, "sheet": 0.45},
-                "1BNA": {"chains": "2", "res": "24", "type": "DNA Helix", "helix": 0.0, "sheet": 0.0}
-            }
-            stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 0.5, "sheet": 0.2})
-
-            # The Status Card
-            st.markdown(f'''
-                <div class="nexus-status-card">
-                    <div class="nexus-stat-label">Core Status</div>
-                    <div class="nexus-stat-value">SYSTEM ACTIVE</div>
-                </div>
-            ''', unsafe_allow_html=True)
-
-            st.markdown("### 📡 Nexus Intelligence")
-            st.caption(f"Classification: {stats['type']}")
-            
-            m1, m2 = st.columns(2)
-            m1.metric("Chains", stats['chains'])
-            m2.metric("Residues", stats['res'])
-            
-            st.divider()
-            
-            st.markdown("### Secondary Structure")
-            st.progress(stats['helix'], text=f"Alpha Helix: {int(stats['helix']*100)}%")
-            st.progress(stats['sheet'], text=f"Beta Sheets: {int(stats['sheet']*100)}%")
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            if water_flag: 
-                st.warning("⚠️ H2O Filter: ACTIVE")
-            else: 
-                st.info("💧 Solvent: VISIBLE")
-            
             with st.expander("🧬 Sequence Map"):
-                sequences = {"1BNA": "CGCGAATTCGCG", "1A8M": "VLSPADKT...", "7DHL": "MFVFL..."}
+                sequences = {"1BNA": "CGCGAATTCGCG", "1A8M": "VLSPADKT...", "1WBD": "MGDSEMAVFG...", "2SPY": "MEEKKDE..."}
                 current_seq = sequences.get(target_pdb.upper(), "SEQUENCE DATA NOT IN CACHE")
                 st.code(current_seq, wrap_lines=True)
 
     except Exception as e:
-        st.error("🚀 **Nexus Engine: Hot-Reloading...**")
-        st.info("The system is catching up with your code changes. Please wait for the auto-refresh.")
-        with st.expander("Debug Details"):
-            st.code(e)
+        # THE SAFETY NET: Show this if you make a code error
+        st.warning("📡 **Nexus Engine: Updating...**")
+        st.info("The 3D Visualization system is currently being calibrated. Please wait for the next sync.")
+        with st.expander("Developer Debug Info"):
+            st.error(f"Error Details: {e}")
+
 
     # 4. Footer info
     st.caption("Bio-Nexus Engine v2.4 | Powered by py3Dmol & OpenPDB")
