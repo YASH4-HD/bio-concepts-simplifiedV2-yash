@@ -807,7 +807,6 @@ with tabs[8]:
             if st.button("🧪 Predict Properties", use_container_width=True, key="btn_predict"):
                 st.info("MW: 64.5 kDa | pI: 6.8 (Estimated)")
         with col_side:
-        # Every line below this MUST be indented by 4 spaces
         st.markdown("<div style='background-color: #1e2130; padding: 15px; border-radius: 10px; border: 1px solid #00d4ff;'>", unsafe_allow_html=True)
         st.subheader("📡 Nexus Intelligence")
         
@@ -844,7 +843,6 @@ with tabs[8]:
             st.code("VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR", wrap_lines=True)
         
         st.markdown("</div>", unsafe_allow_html=True)
-
     # 4. Footer info
     st.caption("Bio-Nexus Engine v2.4 | Powered by py3Dmol & OpenPDB")
 # =========================
