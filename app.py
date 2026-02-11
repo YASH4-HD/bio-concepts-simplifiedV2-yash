@@ -198,6 +198,7 @@ st.markdown("""
 
 # --- TABS DEFINITION ---
 tabs = st.tabs([
+    "🚀 Home", 
     "📖 Reader", 
     "🧠 10 Points", 
     "🧪 DNA Interactive Lab", 
