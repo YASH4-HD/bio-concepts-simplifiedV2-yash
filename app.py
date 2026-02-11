@@ -9,6 +9,8 @@ import datetime
 import plotly.express as px
 import datetime
 import pytz
+import numpy as np
+import matplotlib.pyplot as plt
 # ==========================================
 # 1. AUTO-ADAPTING UI (MOBILE + DESKTOP)
 # ==========================================
@@ -964,10 +966,19 @@ with st.sidebar:
 # =========================
 # TAB 10: 🔬 NCBS RESEARCH 
 # =========================
-with tabs[9]: 
+with tabs[9]:
+    # --- INTERNAL FUNCTIONS (You can move these to the top of your file later) ---
+    def calculate_fret_efficiency(distance_nm, r0_nm=5.4):
+        return 1 / (1 + (distance_nm / r0_nm)**6)
+
+    def simulate_recoil(time_array, tension_level):
+        viscosity = 0.5 
+        tau = viscosity / tension_level 
+        return (1 - np.exp(-time_array / tau))
+
     st.markdown("<h2 style='color: #00d4ff;'>🔬 NCBS Research Intelligence Hub</h2>", unsafe_allow_html=True)
     
-    col_left, col_right = st.columns([1.5, 1]) 
+    col_left, col_right = st.columns([1.4, 1.1]) 
     
     with col_left:
         # Main Image
@@ -975,7 +986,7 @@ with tabs[9]:
                  caption="High-Resolution DIC Imaging: C. elegans (Scale: 50μm)",
                  use_container_width=True)
 
-        # Objective Box with better styling
+        # Objective Box
         st.markdown("""
         <div style="background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 10px; border-left: 5px solid #00d4ff; margin-bottom: 20px;">
             <h3 style="color: #00d4ff; margin-top: 0; font-size: 1.1rem;">🧬 Targeted Mechanobiology Study</h3>
@@ -983,50 +994,82 @@ with tabs[9]:
         </div>
         """, unsafe_allow_html=True)
         
-        # Notebook Section
-        st.markdown("#### 📋 Virtual Lab Notebook")
+        # Notebook Section with Logic
+        st.markdown("#### 📋 Smart Lab Notebook")
         c1, c2 = st.columns(2)
         with c1:
-            st.checkbox("Prepare NGM plates", value=True, key="lab_check1")
-            st.checkbox("RNAi knockdown: unc-70", value=True, key="lab_check2")
+            prep_done = st.checkbox("Prepare NGM plates", value=False, key="lab_check1")
+            rnai_done = st.checkbox("RNAi knockdown: unc-70", value=False, key="lab_check2")
         with c2:
             st.checkbox("Confocal Imaging", value=False, key="lab_check3")
-            st.checkbox("3D Strain Analysis", value=False, key="lab_check4")
+            st.checkbox("Laser Ablation", value=False, key="lab_check4")
             
-        # Observations - Fixed the missing text area
+        # SMART LOGIC CHECK
+        if rnai_done and not prep_done:
+            st.error("⚠️ Protocol Error: Cannot seed RNAi without prepared NGM plates.")
+        elif rnai_done and prep_done:
+            st.success("✅ Protocol Valid: Spectrin knockdown in progress.")
+
         st.markdown("✍️ **Researcher Observations**")
         st.text_area("Observations Input", label_visibility="collapsed", 
-                     placeholder="Enter findings here...", height=100, key="lab_notes")
+                     placeholder="Enter findings here...", height=80, key="lab_notes")
 
     with col_right:
-        # Lab Profile - Matching the Cyan theme
+        # Lab Profile
         st.markdown("""
-        <div style="background: rgba(0, 212, 255, 0.1); padding: 20px; border-radius: 15px; border: 1px solid #00d4ff; margin-bottom: 25px;">
-            <h3 style="margin:0; color: #00d4ff; font-size: 1.3rem;">Lab Profile: NCBS</h3>
-            <p style="font-size: 0.9rem; margin: 10px 0;"><b>PI:</b> Organ Mechanobiology Group</p>
-            <hr style="border: 0.5px solid #00d4ff; opacity: 0.3;">
-            <p style="font-size: 0.85rem; line-height: 1.6;">
-            <b>Priority Genes:</b><br>
-            <code style="color: #00d4ff;">unc-70 (Spectrin)</code><br>
-            <code style="color: #00d4ff;">myo-3 (Myosin)</code><br>
-            <code style="color: #00d4ff;">let-805 (MTJ)</code>
-            </p>
+        <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 15px; border: 1px solid #00d4ff; margin-bottom: 15px;">
+            <h4 style="margin:0; color: #00d4ff; font-size: 1.1rem;">Lab Profile: NCBS</h4>
+            <p style="font-size: 0.8rem; margin: 5px 0;"><b>PI:</b> Organ Mechanobiology Group</p>
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("#### 📊 Strain Analysis")
-        import pandas as pd
-        chart_data = pd.DataFrame({
-            'Strain (pN)': [2, 5, 8, 12, 15, 18],
-            'Fluorescence (%)': [98, 92, 85, 70, 45, 20]
-        })
-        st.line_chart(chart_data.set_index('Strain (pN)'))
-        st.caption("FRET-based tension sensor simulation showing protein unfolding under load.")
+        # SUB-TABS for Real Data Analysis
+        analysis_tab1, analysis_tab2 = st.tabs(["📊 FRET Analysis", "⚡ Laser Ablation"])
+        
+        with analysis_tab1:
+            # REAL PHYSICS: Förster Equation
+            st.write("**Molecular Strain (FRET)**")
+            dist = st.slider("Stretch Distance (nm)", 2.0, 10.0, 5.4, key="fret_slider")
+            
+            # Generate Real Curve
+            d_range = np.linspace(2, 10, 50)
+            e_range = [calculate_fret_efficiency(d) * 100 for d in d_range] # Convert to %
+            current_eff = calculate_fret_efficiency(dist) * 100
+            
+            # Using Matplotlib for a more "Scientific Paper" look
+            fig, ax = plt.subplots(figsize=(4, 3))
+            fig.patch.set_facecolor('none')
+            ax.set_facecolor('none')
+            ax.plot(d_range, e_range, color='#00d4ff', linewidth=2)
+            ax.scatter([dist], [current_eff], color='red', s=50)
+            ax.set_ylabel("Efficiency (%)", color="white", fontsize=8)
+            ax.set_xlabel("Distance (nm)", color="white", fontsize=8)
+            ax.tick_params(colors='white', labelsize=7)
+            st.pyplot(fig)
+            st.caption("FRET efficiency drops as Spectrin stretches (1/r⁶)")
+
+        with analysis_tab2:
+            # REAL PHYSICS: Recoil Velocity
+            st.write("**Tissue Tension Analysis**")
+            tension = st.select_slider("Applied Tension", options=[0.2, 0.8, 1.5], key="tension_slider")
+            
+            t_axis = np.linspace(0, 2, 50)
+            recoil_dist = simulate_recoil(t_axis, tension)
+            
+            recoil_df = pd.DataFrame({"Recoil (μm)": recoil_dist}, index=t_axis)
+            st.line_chart(recoil_df, height=150)
+            st.metric("Recoil Velocity", f"{tension/0.5} μm/s")
 
     # Bottom Pitch
     st.divider()
     with st.expander("🎯 Strategic Alignment with NCBS"):
-        st.info("This module demonstrates the integration of computational strain modeling with the experimental workflows used in the Organ Mechanobiology Group.")
+        st.info("""
+        This module demonstrates three core competencies:
+        1. **Biophysical Modeling:** Real-time calculation of FRET efficiency using the Förster equation.
+        2. **Tissue Mechanics:** Simulation of laser ablation recoil using viscoelastic Kelvin-Voigt models.
+        3. **Experimental Workflow:** Integration with C. elegans genetic tools (RNAi) and lab protocols.
+        """)
+
 
 
 # =========================
