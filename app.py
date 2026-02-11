@@ -963,59 +963,69 @@ with st.sidebar:
 # TAB 10: 🔬 NCBS RESEARCH 
 # =========================
 with tabs[9]: 
-    st.markdown("<h2 style='color: #000000;'>🔬 NCBS Research Intelligence</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00d4ff;'>🔬 NCBS Research Intelligence Hub</h2>", unsafe_allow_html=True)
     
-    # Create two columns
-    col_left, col_right = st.columns([1.5, 1]) # Adjusted ratio to balance the big image
+    col_left, col_right = st.columns([1.5, 1]) 
     
     with col_left:
-        # 1. FIXED IMAGE SIZE: Using width=600 instead of container_width to prevent it being "too big"
+        # Main Image
         st.image("https://www.leica-microsystems.com/fileadmin/_processed_/5/c/csm_Roundworm_C_elegans_M205_FA_Rottermann_contrast_4d9ae96fc1.jpg", 
                  caption="High-Resolution DIC Imaging: C. elegans (Scale: 50μm)",
-                 width=600) 
+                 use_container_width=True)
 
+        # Objective Box with better styling
         st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; border-left: 5px solid #00d4ff; margin-top: 10px;">
-            <h3 style="color: #000000; margin-top: 0; font-size: 1.2rem;">🧬 Targeted Mechanobiology Study</h3>
-            <p style="font-size: 0.9rem;"><b>Focus:</b> Structural integrity of the spectrin cytoskeleton under mechanical strain in <i>C. elegans</i> muscle cells.</p>
+        <div style="background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 10px; border-left: 5px solid #00d4ff; margin-bottom: 20px;">
+            <h3 style="color: #00d4ff; margin-top: 0; font-size: 1.1rem;">🧬 Targeted Mechanobiology Study</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 0;"><b>Focus:</b> Structural integrity of the spectrin cytoskeleton under mechanical strain in <i>C. elegans</i> muscle cells.</p>
         </div>
         """, unsafe_allow_html=True)
         
-        st.write("#### 📋 Virtual Lab Notebook")
+        # Notebook Section
+        st.markdown("#### 📋 Virtual Lab Notebook")
         c1, c2 = st.columns(2)
         with c1:
-            st.checkbox("Prepare NGM plates", value=True, key="ncbs_check1")
-            st.checkbox("RNAi knockdown: unc-70", value=True, key="ncbs_check2")
+            st.checkbox("Prepare NGM plates", value=True, key="lab_check1")
+            st.checkbox("RNAi knockdown: unc-70", value=True, key="lab_check2")
         with c2:
-            st.checkbox("Confocal Imaging", value=False, key="ncbs_check3")
-            st.checkbox("3D Strain Analysis", value=False, key="ncbs_check4")
+            st.checkbox("Confocal Imaging", value=False, key="lab_check3")
+            st.checkbox("3D Strain Analysis", value=False, key="lab_check4")
             
-        st.text_area("✍️ Researcher Observations", height=80, key="ncbs_notes")
+        # Observations - Fixed the missing text area
+        st.markdown("✍️ **Researcher Observations**")
+        st.text_area("Observations Input", label_visibility="collapsed", 
+                     placeholder="Enter findings here...", height=100, key="lab_notes")
 
     with col_right:
-        # 2. LAB PROFILE BOX (Moved to top of right column)
+        # Lab Profile - Matching the Cyan theme
         st.markdown("""
-        <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 10px; border: 1px solid #00d4ff;">
-            <h4 style="margin:0; color: #00d4ff;">Lab Profile: NCBS</h4>
-            <p style="font-size: 0.8rem; margin: 5px 0;"><b>PI:</b> Organ Mechanobiology Group</p>
+        <div style="background: rgba(0, 212, 255, 0.1); padding: 20px; border-radius: 15px; border: 1px solid #00d4ff; margin-bottom: 25px;">
+            <h3 style="margin:0; color: #00d4ff; font-size: 1.3rem;">Lab Profile: NCBS</h3>
+            <p style="font-size: 0.9rem; margin: 10px 0;"><b>PI:</b> Organ Mechanobiology Group</p>
             <hr style="border: 0.5px solid #00d4ff; opacity: 0.3;">
-            <p style="font-size: 0.8rem;"><b>Priority Genes:</b> unc-70, myo-3, let-805</p>
+            <p style="font-size: 0.85rem; line-height: 1.6;">
+            <b>Priority Genes:</b><br>
+            <code style="color: #00d4ff;">unc-70 (Spectrin)</code><br>
+            <code style="color: #00d4ff;">myo-3 (Myosin)</code><br>
+            <code style="color: #00d4ff;">let-805 (MTJ)</code>
+            </p>
         </div>
         """, unsafe_allow_html=True)
         
-        st.write("#### 📊 Strain Analysis")
-        # 3. CONSOLIDATED CHART (Only one chart here)
+        st.markdown("#### 📊 Strain Analysis")
         import pandas as pd
         chart_data = pd.DataFrame({
             'Strain (pN)': [2, 5, 8, 12, 15, 18],
             'Fluorescence (%)': [98, 92, 85, 70, 45, 20]
         })
         st.line_chart(chart_data.set_index('Strain (pN)'))
-        st.caption("FRET-based tension sensor simulation.")
+        st.caption("FRET-based tension sensor simulation showing protein unfolding under load.")
 
-    # 4. SINGLE MESSAGE EXPANDER (Moved outside columns to bottom)
-    with st.expander("🎯 Message to the Recruiter"):
-        st.info("This interface demonstrates my ability to integrate computational modeling with experimental workflows for NCBS research.")
+    # Bottom Pitch
+    st.divider()
+    with st.expander("🎯 Strategic Alignment with NCBS"):
+        st.info("This module demonstrates the integration of computational strain modeling with the experimental workflows used in the Organ Mechanobiology Group.")
+
 
 # =========================
 # SIDEBAR: RESEARCH TIP
