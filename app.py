@@ -963,7 +963,7 @@ with st.sidebar:
 # TAB 10: 🔬 NCBS RESEARCH 
 # =========================
 with tabs[9]: 
-    st.markdown("<h2 style='color: #00d4ff;'>🔬 NCBS Research Intelligence</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #000000;'>🔬 NCBS Research Intelligence</h2>", unsafe_allow_html=True)
     
     col_left, col_right = st.columns([2, 1])
     
