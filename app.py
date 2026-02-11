@@ -316,8 +316,10 @@ with tabs[0]:
                 </div>
             </div>
         """, unsafe_allow_html=True)
-         # Add this small button for UX
-    st.button("Open Lab Module 🔬", use_container_width=True, key="launch_ncbs")
+         # Update the button logic here:
+    if st.button("Open Lab Module 🔬", use_container_width=True, key="launch_ncbs"):
+        st.balloons() # Adds a celebratory effect!
+        st.success("🚀 NCBS Module Ready! Please click on the **'NCBS: Mechanobiology'** tab at the top of the page.")
 
     st.info("💡 **Study Tip:** Use the '10 Points' tab to quickly review key exam facts for the currently selected chapter.")
 
