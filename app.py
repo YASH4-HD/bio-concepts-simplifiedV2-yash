@@ -228,17 +228,18 @@ st.markdown("""
 
 # --- TABS DEFINITION ---
 tabs = st.tabs([
-    "🚀 Home", 
-    "📖 Reader", 
-    "🧠 10 Points", 
-    "🧪 DNA Interactive Lab", 
-    "🔍 Search", 
-    "🌐 Global Bio-Search", 
-    "🇮🇳 Hindi Helper", 
+    "🚀 Home",
+    "📖 Reader",
+    "🧠 10 Points",
+    "🧪 DNA Interactive Lab",
+    "🔍 Search",
+    "🌐 Global Bio-Search",
+    "🇮🇳 Hindi Helper",
     "🧬 Advanced Molecular Suite",
-    "🔬 3D Viewer"  # <--- This MUST be the 9th item
-    "🔬 NCBS Research Hub"  # <--- THIS IS THE 10th TAB (Index 9)
+    "🔬 3D Viewer",
+    "🔬 NCBS Research Hub"
 ])
+
 # =========================
 # TAB 1: 🚀 HOME (LAUNCHPAD)
 # =========================
