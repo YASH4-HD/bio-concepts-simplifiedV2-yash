@@ -237,7 +237,7 @@ tabs = st.tabs([
     "🇮🇳 Hindi Helper", 
     "🧬 Advanced Molecular Suite",
     "🔬 3D Viewer"  # <--- This MUST be the 9th item
-    "🔬 NCBS Research"
+    "🔬 NCBS Research Hub"  # <--- THIS IS THE 10th TAB (Index 9)
 ])
 # =========================
 # TAB 1: 🚀 HOME (LAUNCHPAD)
