@@ -108,10 +108,7 @@ def inject_responsive_design():
     <div class="particle" style="left:60%; animation-delay:2s;">○</div>
     <div class="particle" style="left:85%; animation-delay:8s;">🧬</div>
 </div>
-""", unsafe_allow_html=True)  # <--- Make sure this line has the """, ), and the True)
-
-
-
+""", unsafe_allow_html=True)
 
 inject_responsive_design()
 
