@@ -841,7 +841,6 @@ with tabs[8]:
         # 4. Sequence Preview
         with st.expander("🧬 View Sequence Map"):
             st.code("VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR", wrap_lines=True)
-        
         st.markdown("</div>", unsafe_allow_html=True)
     # 4. Footer info
     st.caption("Bio-Nexus Engine v2.4 | Powered by py3Dmol & OpenPDB")
