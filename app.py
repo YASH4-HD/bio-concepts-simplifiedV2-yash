@@ -101,7 +101,7 @@ def inject_responsive_design():
 
     </style>
 
-    # Wrap the HTML in st.markdown so it runs as code, not text
+    # Make sure you have st.markdown and the triple quotes """
 st.markdown("""
 <div aria-hidden="true">
     <div class="particle" style="left:10%; animation-delay:0s;">🧬</div>
@@ -110,6 +110,7 @@ st.markdown("""
     <div class="particle" style="left:85%; animation-delay:8s;">🧬</div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 inject_responsive_design()
