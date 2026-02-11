@@ -205,7 +205,7 @@ tabs = st.tabs([
     "🔍 Search", 
     "🌐 Global Bio-Search", 
     "🇮🇳 Hindi Helper", 
-    "🧬 Advanced Molecular Suite"
+    "🧬 Advanced Molecular Suite",
     "🔬 3D Viewer"  # <--- This MUST be the 9th item
 ])
 # =========================
