@@ -1038,13 +1038,18 @@ with tabs[9]:
             
             # Using Matplotlib for a more "Scientific Paper" look
             fig, ax = plt.subplots(figsize=(4, 3))
-            fig.patch.set_facecolor('none')
+            fig.patch.set_alpha(0.0)
             ax.set_facecolor('none')
-            ax.plot(d_range, e_range, color='#00d4ff', linewidth=2)
+            ax.plot(d_range, e_range, color='#333333', linewidth=2)
             ax.scatter([dist], [current_eff], color='red', s=50)
-            ax.set_ylabel("Efficiency (%)", color="white", fontsize=8)
-            ax.set_xlabel("Distance (nm)", color="white", fontsize=8)
-            ax.tick_params(colors='white', labelsize=7)
+            ax.set_ylabel("Efficiency (%)", color=label_color, fontsize=10, fontweight='bold')
+            ax.set_xlabel("Distance (nm)", color=label_color, fontsize=10, fontweight='bold')
+            ax.tick_params(axis='x', colors=label_color, labelsize=9)
+            ax.tick_params(axis='y', colors=label_color, labelsize=9)
+            # Make the border (spines) visible
+            for spine in ax.spines.values():
+                spine.set_edgecolor(label_color)
+                spine.set_linewidth(1)
             st.pyplot(fig)
             st.caption("FRET efficiency drops as Spectrin stretches (1/r⁶)")
 
