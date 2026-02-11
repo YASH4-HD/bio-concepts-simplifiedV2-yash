@@ -305,34 +305,7 @@ with tabs[0]:
         """, unsafe_allow_html=True)
 
     st.info("💡 **Study Tip:** Use the '10 Points' tab to quickly review key exam facts for the currently selected chapter.")
-    st.markdown("---")
-st.subheader("🤖 Ask Bio-Tech AI")
-
-# Search bar for HOME TAB ONLY
-home_query = st.text_input(
-    "Search textbook content...", 
-    placeholder="🔍 Try 'DNA', 'CRISPR', or 'Proteins'...", 
-    key="home_search_bar" # Unique key
-)
-
-if home_query:
-    # This searches the correct columns: 'Topic' and 'Explanation'
-    results = knowledge_df[
-        knowledge_df['Topic'].str.contains(home_query, case=False, na=False) | 
-        knowledge_df['Explanation'].str.contains(home_query, case=False, na=False)
-    ]
-    
-    if not results.empty:
-        st.success(f"Found {len(results)} matches!")
-        for i, row in results.iterrows():
-            with st.expander(f"📖 {row['Topic']}"):
-                st.write(row['Explanation'][:200] + "...") # Preview
-                if st.button(f"Go to Page {i+1}", key=f"home_jump_{i}"):
-                    st.session_state.page_index = i
-                    st.rerun()
-    else:
-        st.info("No results found. Try a different keyword.")
-
+   
 # =========================
 # TAB 1: 📖 READER (Previously tabs[0])
 # =========================
