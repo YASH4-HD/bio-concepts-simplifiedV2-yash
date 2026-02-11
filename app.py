@@ -970,7 +970,7 @@ with tabs[9]:
     with col_left:
         st.markdown("""
         <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 10px;">
-            <h3 style="color: #00d4ff; margin-top: 0;">🧬 Targeted Mechanobiology Study: <i>C. elegans</i></h3>
+            <h3 style="color: ##2a8dbf; margin-top: 0;">🧬 Targeted Mechanobiology Study: <i>C. elegans</i></h3>
             <p><b>Objective:</b> To investigate the structural integrity of the spectrin cytoskeleton under mechanical strain in muscle cells.</p>
         </div>
         """, unsafe_allow_html=True)
