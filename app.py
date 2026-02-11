@@ -765,3 +765,26 @@ with st.sidebar:
     st.info(tips[tip_index])
     
     st.caption("© 2026 Bio-Verify | Developed for Genomic Research")
+# ==========================================
+# FLOATING AI SEARCH BAR (GLOBAL)
+# ==========================================
+st.markdown('<div class="floating-search">', unsafe_allow_html=True)
+query = st.text_input("🔍 Ask Bio-Tech AI (Search textbook...)", placeholder="Type a topic like 'DNA Replication'...", label_visibility="collapsed")
+st.markdown('</div>', unsafe_allow_html=True)
+
+if query:
+    # This logic searches your knowledge_df automatically
+    results = knowledge_df[knowledge_df['Topic'].str.contains(query, case=False, na=False)]
+    
+    if not results.empty:
+        st.toast(f"Found {len(results)} matches!")
+        with st.expander("🔍 Search Results", expanded=True):
+            for i, row in results.iterrows():
+                if st.button(f"Go to {row['Topic']}", key=f"search_{i}"):
+                    st.session_state.page_index = i
+                    # Note: You might need to manually switch to the Reader tab 
+                    # but the data will be ready there!
+                    st.rerun()
+    else:
+        st.toast("No matches found in textbook.")
+
