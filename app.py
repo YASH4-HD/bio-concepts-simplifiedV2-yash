@@ -664,7 +664,59 @@ with tabs[7]:
         elif gc_content < 40:
             st.info("ℹ️ Low GC Content: AT-rich region.")
         else:
-            st.success("✅ Balanced GC Content: Normal distribution.")      
+            st.success("✅ Balanced GC Content: Normal distribution.") 
+# ==========================================
+# TAB 8: 🔬 3D STRUCTURE VIEWER
+# ==========================================
+with tabs[8]:
+    from stmol import showmol
+    import py3Dmol
+
+    st.header("🔬 Interactive 3D Structure Viewer")
+    
+    st.markdown("""
+        <div class="bio-card">
+            <p>Enter a <b>PDB ID</b> (Protein Data Bank ID) to visualize the 3D molecular structure. 
+            Common IDs: <b>1A2B</b>, <b>6M8F</b> (COVID-19 Protease), <b>4INS</b> (Insulin).</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Input for PDB ID
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        pdb_id = st.text_input("Enter PDB ID:", "6M8F").strip()
+    
+    with c2:
+        style = st.selectbox("Select Visualization Style:", 
+                            ["cartoon", "stick", "sphere", "line"])
+
+    if pdb_id:
+        try:
+            with st.spinner(f"Fetching structure {pdb_id}..."):
+                # Create the 3D Viewer
+                view = py3Dmol.view(query=f'pdb:{pdb_id}')
+                
+                # Apply the chosen style and a professional color scheme
+                if style == "cartoon":
+                    view.setStyle({'cartoon': {'color': 'spectrum'}})
+                elif style == "stick":
+                    view.setStyle({'stick': {}})
+                elif style == "sphere":
+                    view.setStyle({'sphere': {}})
+                else:
+                    view.setStyle({'line': {}})
+                
+                view.addSurface(py3Dmol.VDW, {'opacity': 0.3, 'color': 'white'}) # Adds a subtle outer shell
+                view.spin(True) # Makes it rotate automatically for a "High-Tech" look
+                
+                # Display in Streamlit
+                st.markdown('<div class="bio-card" style="background: #f8faff;">', unsafe_allow_html=True)
+                showmol(view, height=500, width=800)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                st.info("💡 **Pro-Tip:** Use your mouse to rotate, zoom, and inspect the protein structure.")
+        except Exception as e:
+            st.error(f"Could not load PDB ID '{pdb_id}'. Please check the ID and your internet connection.")
 # =========================
 # SIDEBAR: RESEARCH REPORT
 # =========================
