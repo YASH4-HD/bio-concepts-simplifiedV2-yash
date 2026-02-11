@@ -821,7 +821,7 @@ with tabs[8]:
             dark_mode = st.toggle("Night Vision", value=True, key="nexus_dark")
 
         # Command Terminal
-        chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'REMOVE WATER' or 'STOP'", key="nexus_chat").upper()
+        chat_query = st.text_input("💬 Command Terminal", placeholder="Try 'HIGHLIGHT ACTIVE SITE' or 'SIMULATE TENSION'", key="nexus_chat").upper()
         water_flag = "REMOVE WATER" in chat_query
         spin_flag = "STOP" not in chat_query
 
