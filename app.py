@@ -101,15 +101,15 @@ def inject_responsive_design():
 
     </style>
 
-    # Make sure you have st.markdown and the triple quotes """
-st.markdown("""
+    st.markdown("""
 <div aria-hidden="true">
     <div class="particle" style="left:10%; animation-delay:0s;">🧬</div>
     <div class="particle" style="left:35%; animation-delay:5s;">●</div>
     <div class="particle" style="left:60%; animation-delay:2s;">○</div>
     <div class="particle" style="left:85%; animation-delay:8s;">🧬</div>
 </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)  # <--- Make sure this line has the """, ), and the True)
+
 
 
 
