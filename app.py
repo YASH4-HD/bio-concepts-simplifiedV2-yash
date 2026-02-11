@@ -813,7 +813,7 @@ with tabs[8]:
                         border: 2px solid #00d4ff; 
                         box-shadow: 0px 0px 15px #00d4ff;
                         color: white;'>
-        st.markdown("</div>", unsafe_allow_html=True)
+        """st.markdown("</div>", unsafe_allow_html=True)
         # Get data for current PDB or use defaults
         stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 50, "sheet": 20})
         
