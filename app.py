@@ -790,49 +790,52 @@ with tabs[8]:
             if st.button("🧪 Predict Properties", use_container_width=True, key="nexus_btn3"):
                 st.info("MW: 64.5 kDa | pI: 6.8")
         with col_side:
-        # 1. DATABASE LOGIC
-            pdb_data = {
-                "1A8M": {"chains": "4", "res": "574", "type": "Hemoglobin", "helix": 72, "sheet": 12},
-                "7DHL": {"chains": "3", "res": "3726", "type": "Spike Protein", "helix": 25, "sheet": 45},
-                "1BNA": {"chains": "2", "res": "24", "type": "DNA Helix", "helix": 0, "sheet": 0}
-            }
-            
-            sequences = {
-                "1BNA": "CGCGAATTCGCG",
-                "1A8M": "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
-                "7DHL": "MFVFLVLLPLVSSQCVNLTTRTQLPPAYTNSFTRGVYYPDKVFRSSVLHSTQDLFLPFFSNVTWFHAIHVSGTNGTKRFDNPVLPFNDGVYFASTEKSNIIRGWIFGTTLDSKTQSLLIVNNATNVVIKVCEFQFCNDPFLGVYYHKNNKSWMESEFRVYSSANNCTFEYVSQPFLMDLEGKQGNFKNLREFVFKNIDGYFKIYSKHTPINLVRDLPQGFSALEPLVDLPIGINITRFQTLLALHRSYLTPGDSSSGWTAGAAAYYVGYLQPRTFLLKYNENGTITDAVDCALDPLSETKCTLKSFTVEKGIYQTSNFRVQPTESIVRFPNITNLCPFGEVFNATRFASVYAWNRKRISNCVADYSVLYNSASFSTFKCYGVSPTKLNDLCFTNVYADSFVIRGDEVRQIAPGQTGKIADYNYKLPDDFTGCVIAWNSNNLDSKVGGNYNYLYRLFRKSNLKPFERDISTEIYQAGSTPCNGVEGFNCYFPLQSYGFQPTNGVGYQPYRVVVLSFELLHAPATVCGPKKSTNLVKNKCVNFNFNGLTGTGVLTESNKKFLPFQQFGRDIADTTDAVRDPQTLEILDITPCSFGGVSVITPGTNTSNQVAVLYQDVNCTEVPVAIHADQLTPTWRVYSTGSNVFQTRAGCLIGAEHVNNSYECDIPIGAGICASYQTQTNSPRRARSVASQSIIAYTMSLGAENSVAYSNNSIAIPTNFTISVTTEILPVSMTKTSVDCTMYICGDSTECSNLLLQYGSFCTQLNRALTGIAVEQDKNTQEVFAQVKQIYKTPPIKDFGGFNFSQILPDPSKPSKRSFIEDLLFNKVTLADAGFIKQYGDCLGDIAARDLICAQKFNGLTVLPPLLTDEMIAQYTSALLAGTITSGWTFGAGAALQIPFAMQMAYRFNGIGVTQNVLYENQKLIANQFNSAIGKIQDSLSSTASALGKLQDVVNQNAQALNTLVKQLSSNFGAISSVLNDILSRLDKVEAEVQIDRLITGRLQSLQTYVTQQLIRAAEIRASANLAATKMSECVLGQSKRVDFCGKGYHLMSFPQSAPHGVVFLHVTYVPAQEKNFTTAPAICHDGKAHFPREGVFVSNGTHWFVTQRNFYEPQIITTDNTFVSGNCDVVIGIVNNTVYDPLQPELDSFKEELDKYFKNHTSPDVDLGDISGINASVVNIQKEIDRLNEVAKNLNESLIDLQELGKYEQYIKWPWYIWLGFIAGLIAIVMVTIMLCCMTSCCSCLKGCCSCGSCCKFDEDDSEPVLKGVKLHYT"
-            }
-    
-            # 2. UI CONTAINER WITH GLOW
-            st.markdown("""
-                <div style='background-color: #0e1117; padding: 20px; border-radius: 15px; border: 2px solid #00d4ff; box-shadow: 0px 0px 15px #00d4ff; color: white;'>
-            """, unsafe_allow_html=True)
-    
-            stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 50, "sheet": 20})
-            st.subheader("📡 Nexus Intelligence")
-            st.caption(f"Classification: {stats['type']}")
-            
-            m1, m2 = st.columns(2)
-            with m1:
-                st.metric("Chains", stats['chains'])
-            with m2:
-                st.metric("Residues", stats['res'])
-                
-            st.markdown("---")
-            st.write("**Secondary Structure**")
-            st.progress(stats['helix'] / 100, text=f"Alpha Helix: {stats['helix']}%")
-            st.progress(stats['sheet'] / 100, text=f"Beta Sheets: {stats['sheet']}%")
-            
-            st.markdown("---")
-            st.write("**Engine Status**")
-            if water_flag: st.warning("⚠️ H2O Filter: ACTIVE")
-            else: st.info("💧 Solvent: VISIBLE")
-            
-            with st.expander("🧬 Sequence Map"):
-                current_seq = sequences.get(target_pdb.upper(), "SEQUENCE DATA NOT IN CACHE")
-                st.code(current_seq, wrap_lines=True)
-                
-            st.markdown("</div>", unsafe_allow_html=True)
+        # 1. DATABASE LOGIC (Keep this outside the box for logic)
+			pdb_data = {
+				"1A8M": {"chains": "4", "res": "574", "type": "Hemoglobin", "helix": 72, "sheet": 12},
+				"7DHL": {"chains": "3", "res": "3726", "type": "Spike Protein", "helix": 25, "sheet": 45},
+				"1BNA": {"chains": "2", "res": "24", "type": "DNA Helix", "helix": 0, "sheet": 0}
+			}
+			stats = pdb_data.get(target_pdb.upper(), {"chains": "1", "res": "Unknown", "type": "Protein", "helix": 50, "sheet": 20})
+
+			# 2. START THE GLOWING CONTAINER
+			st.markdown("""
+				<div style='background-color: #0e1117; padding: 20px; border-radius: 15px; border: 2px solid #00d4ff; box-shadow: 0px 0px 15px #00d4ff; color: white;'>
+			""", unsafe_allow_html=True)
+
+			# 3. CONTENT (Now inside the container)
+			st.subheader("📡 Nexus Intelligence")
+			st.caption(f"Classification: {stats['type']}")
+			
+			m1, m2 = st.columns(2)
+			with m1:
+				st.metric("Chains", stats['chains'])
+			with m2:
+				st.metric("Residues", stats['res'])
+				
+			st.markdown("<hr style='border: 1px solid #00d4ff;'>", unsafe_allow_html=True)
+			st.write("**Secondary Structure**")
+			st.progress(stats['helix'] / 100, text=f"Alpha Helix: {stats['helix']}%")
+			st.progress(stats['sheet'] / 100, text=f"Beta Sheets: {stats['sheet']}%")
+			
+			st.markdown("<hr style='border: 1px solid #00d4ff;'>", unsafe_allow_html=True)
+			st.write("**Engine Status**")
+			if water_flag: st.warning("⚠️ H2O Filter: ACTIVE")
+			else: st.info("💧 Solvent: VISIBLE")
+			
+			# 4. CLOSE THE GLOWING CONTAINER
+			st.markdown("</div>", unsafe_allow_html=True)
+
+			# 5. EXPANDER (Keep this outside the box for better UI)
+			with st.expander("🧬 Sequence Map"):
+				sequences = {
+					"1BNA": "CGCGAATTCGCG",
+					"1A8M": "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+					"7DHL": "MFVFLVLLPLVSSQCVNLTTRTQLPPAYTNSFTRGVYYPDKVFRSSVLHSTQDLFLPFFSNVTWFHAIHVSGTNGTKRFDNPVLPFNDGVYFASTEKSNIIRGWIFGTTLDSKTQSLLIVNNATNVVIKVCEFQFCNDPFLGVYYHKNNKSWMESEFRVYSSANNCTFEYVSQPFLMDLEGKQGNFKNLREFVFKNIDGYFKIYSKHTPINLVRDLPQGFSALEPLVDLPIGINITRFQTLLALHRSYLTPGDSSSGWTAGAAAYYVGYLQPRTFLLKYNENGTITDAVDCALDPLSETKCTLKSFTVEKGIYQTSNFRVQPTESIVRFPNITNLCPFGEVFNATRFASVYAWNRKRISNCVADYSVLYNSASFSTFKCYGVSPTKLNDLCFTNVYADSFVIRGDEVRQIAPGQTGKIADYNYKLPDDFTGCVIAWNSNNLDSKVGGNYNYLYRLFRKSNLKPFERDISTEIYQAGSTPCNGVEGFNCYFPLQSYGFQPTNGVGYQPYRVVVLSFELLHAPATVCGPKKSTNLVKNKCVNFNFNGLTGTGVLTESNKKFLPFQQFGRDIADTTDAVRDPQTLEILDITPCSFGGVSVITPGTNTSNQVAVLYQDVNCTEVPVAIHADQLTPTWRVYSTGSNVFQTRAGCLIGAEHVNNSYECDIPIGAGICASYQTQTNSPRRARSVASQSIIAYTMSLGAENSVAYSNNSIAIPTNFTISVTTEILPVSMTKTSVDCTMYICGDSTECSNLLLQYGSFCTQLNRALTGIAVEQDKNTQEVFAQVKQIYKTPPIKDFGGFNFSQILPDPSKPSKRSFIEDLLFNKVTLADAGFIKQYGDCLGDIAARDLICAQKFNGLTVLPPLLTDEMIAQYTSALLAGTITSGWTFGAGAALQIPFAMQMAYRFNGIGVTQNVLYENQKLIANQFNSAIGKIQDSLSSTASALGKLQDVVNQNAQALNTLVKQLSSNFGAISSVLNDILSRLDKVEAEVQIDRLITGRLQSLQTYVTQQLIRAAEIRASANLAATKMSECVLGQSKRVDFCGKGYHLMSFPQSAPHGVVFLHVTYVPAQEKNFTTAPAICHDGKAHFPREGVFVSNGTHWFVTQRNFYEPQIITTDNTFVSGNCDVVIGIVNNTVYDPLQPELDSFKEELDKYFKNHTSPDVDLGDISGINASVVNIQKEIDRLNEVAKNLNESLIDLQELGKYEQYIKWPWYIWLGFIAGLIAIVMVTIMLCCMTSCCSCLKGCCSCGSCCKFDEDDSEPVLKGVKLHYT"
+				}
+				current_seq = sequences.get(target_pdb.upper(), "SEQUENCE DATA NOT IN CACHE")
+				st.code(current_seq, wrap_lines=True)
+
 
 
     # 4. Footer info
