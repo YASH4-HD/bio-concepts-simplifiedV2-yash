@@ -69,6 +69,36 @@ def inject_responsive_design():
         margin-top: 5px;
         border: 1px solid #bae6fd;
     }
+    /* Floating Search Bar at the bottom */
+.floating-search {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    z-index: 1000;
+    background: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border: 1px solid #0369a1;
+}
+
+/* Hide on small phones so it doesn't block content */
+@media (max-width: 767px) {
+    .floating-search { width: 90%; bottom: 10px; }
+}
+/* This part allows the search bar to float outside the normal container */
+.stApp {
+    overflow: visible !important;
+}
+
+/* This targets the specific Streamlit input to make it look cleaner */
+.stTextInput > div > div > input {
+    border: none !important;
+    background: transparent !important;
+}
+
     </style>
 
     <div aria-hidden="true">
@@ -768,23 +798,39 @@ with st.sidebar:
 # ==========================================
 # FLOATING AI SEARCH BAR (GLOBAL)
 # ==========================================
+
+# 1. Create the floating container using your CSS class
 st.markdown('<div class="floating-search">', unsafe_allow_html=True)
-query = st.text_input("🔍 Ask Bio-Tech AI (Search textbook...)", placeholder="Type a topic like 'DNA Replication'...", label_visibility="collapsed")
+
+# 2. The Search Input (label hidden for a clean look)
+query = st.text_input(
+    "Search", 
+    placeholder="🔍 Ask Bio-Tech AI (e.g. Protein, DNA...)", 
+    label_visibility="collapsed"
+)
+
 st.markdown('</div>', unsafe_allow_html=True)
 
+# 3. Search Logic
 if query:
-    # This logic searches your knowledge_df automatically
-    results = knowledge_df[knowledge_df['Topic'].str.contains(query, case=False, na=False)]
+    # This searches both the Topic and the Content for the word you typed
+    results = knowledge_df[
+        knowledge_df['Topic'].str.contains(query, case=False, na=False) | 
+        knowledge_df['Content'].str.contains(query, case=False, na=False)
+    ]
     
     if not results.empty:
+        # Show a notification
         st.toast(f"Found {len(results)} matches!")
+        
+        # Display results in a pop-up style expander
         with st.expander("🔍 Search Results", expanded=True):
             for i, row in results.iterrows():
-                if st.button(f"Go to {row['Topic']}", key=f"search_{i}"):
+                # If user clicks the button, update the page index and refresh
+                if st.button(f"📖 Go to: {row['Topic']}", key=f"search_{i}"):
                     st.session_state.page_index = i
-                    # Note: You might need to manually switch to the Reader tab 
-                    # but the data will be ready there!
                     st.rerun()
     else:
-        st.toast("No matches found in textbook.")
+        st.toast("No matches found in the textbook.")
+
 
