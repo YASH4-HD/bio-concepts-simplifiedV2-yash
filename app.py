@@ -193,17 +193,37 @@ def get_text_from_image(img_path):
 # =========================
 @st.cache_data
 def load_knowledge_base():
-    # Looking for either filename
-    for file in ["knowledge_base.csv", "knowledge.csv"]:
-        if os.path.exists(file):
-            try:
-                df = pd.read_csv(file)
-                df.columns = df.columns.str.strip()
-                df = df.dropna(how='all')
-                return df
-            except Exception:
-                continue
-    return pd.DataFrame(columns=["Topic", "Section", "Explanation", "Image", "Ten_Points", "Detailed_Explanation"])
+    csv_path = Path("knowledge_base.csv")
+    if not csv_path.exists():
+        return pd.DataFrame()
+    try:
+        # 1. Load the CSV
+        kb_df = pd.read_csv(csv_path)
+        
+        # 2. Clean column names (removes spaces like " Topic ")
+        kb_df.columns = [c.strip() for c in kb_df.columns]
+        
+        # 3. FIX: Remove the row where the data literally says "Topic" 
+        # (This is that Row 1 in your Excel screenshot)
+        kb_df = kb_df[kb_df['Topic'] != 'Topic']
+        
+        # 4. FIX: If there is an empty first column from Excel, drop it
+        if 'Unnamed: 0' in kb_df.columns or 'Row' in kb_df.columns:
+            # We keep only the columns we need
+            valid_cols = [c for c in ['Topic', 'Section', 'Explanation', 'Ten_Points'] if c in kb_df.columns]
+            kb_df = kb_df[valid_cols]
+
+        # 5. Drop any completely empty rows
+        kb_df = kb_df.dropna(subset=['Topic'])
+        
+        # 6. Reset index so navigation works (0, 1, 2...)
+        kb_df = kb_df.reset_index(drop=True)
+        
+        return kb_df
+    except Exception as e:
+        st.error(f"CSV Error: {e}")
+        return pd.DataFrame()
+
 
 knowledge_df = load_knowledge_base()
 
